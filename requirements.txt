@@ -1,0 +1,17 @@
+pandas
+numpy
+openpyxl
+streamlit
+python-dotenv
+requests
+beautifulsoup4
+chromadb
+sentence-transformers
+langchain
+langchain-community
+langchain-chroma
+langchain-huggingface
+pypdf
+langchain-text-splitters
+ollama
+tabulate
