@@ -1,4 +1,3 @@
-import pandas as pd
 import ollama
 
 from src.rag.rag_answerer import build_context_from_docs, format_sources
@@ -15,31 +14,34 @@ def generate_hybrid_answer(question: str, structured_result, rag_docs) -> str:
     sources = format_sources(rag_docs)
 
     prompt = f"""
-You are a climate and energy transition assistant.
+    You are a climate and energy transition assistant.
 
-Answer the user's question using BOTH:
-1. the structured emissions data
-2. the retrieved document context
+    Answer the user's question using BOTH:
+    1. the structured emissions data
+    2. the retrieved document context
 
-Use the structured data for numbers, rankings, and comparisons.
-Use the document context for explanation, interpretation, and climate policy context.
+    Rules:
+    - Use the structured data for exact numbers, rankings, and country comparisons.
+    - Use the document context only for explanations that are explicitly supported.
+    - Do not invent values.
+    - Do not infer country-specific causes unless the document context explicitly supports them.
+    - If the document context is EU-level, say it provides EU-level context, not country-specific causality.
+    - Avoid speculative phrases like "could be attributed to" unless the evidence is directly provided.
+    - If something is not supported by the provided data or documents, say so clearly.
+    - Do not provide general explanations after saying that evidence is not available.
+    - End the answer after clearly stating what is supported and what is not supported.
 
-Do not infer country-specific explanations unless they are explicitly supported by the document context.
-Use the structured data only for the countries and values shown in the table.
-If the document context discusses the EU generally, clearly say that it provides EU-level context, not country-specific causality.
-Do not use phrases like "could be attributed to" unless the evidence is directly provided.
+    QUESTION:
+    {question}
 
-QUESTION:
-{question}
+    STRUCTURED DATA:
+    {structured_context}
 
-STRUCTURED DATA:
-{structured_context}
+    DOCUMENT CONTEXT:
+    {rag_context}
 
-DOCUMENT CONTEXT:
-{rag_context}
-
-ANSWER:
-"""
+    ANSWER:
+    """
 
     response = ollama.chat(
         model=MODEL_NAME,
