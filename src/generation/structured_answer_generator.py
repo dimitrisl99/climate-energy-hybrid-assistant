@@ -18,23 +18,32 @@ def generate_structured_answer(question: str, structured_result) -> str:
     context = dataframe_to_context(structured_result)
 
     prompt = f"""
-You are a climate and energy data assistant.
+    You are a climate and energy data assistant.
 
-Answer the user's question using ONLY the structured data provided below.
+    Answer the user's question using ONLY the structured data provided below.
 
-Do not invent values.
-Do not use external knowledge.
-Mention the year if it appears in the data.
-Be concise and factual.
+    Rules:
+    - Do not invent values.
+    - Do not use external knowledge.
+    - Mention the year if it appears in the data.
+    - Preserve all countries shown in the structured data.
+    - When comparing numeric values, check the ordering carefully.
+    - Do not say that a country has the highest value unless it is numerically the highest.
+    - If the data contains multiple metrics, compare each metric separately.
+    - Be concise and factual.
+    - Include units when possible:
+      - CO2 values are in million tonnes.
+      - CO2 per capita values are in tonnes per person.
+      - total_ghg values are in million tonnes CO2-equivalent.
 
-QUESTION:
-{question}
+    QUESTION:
+    {question}
 
-STRUCTURED DATA:
-{context}
+    STRUCTURED DATA:
+    {context}
 
-ANSWER:
-"""
+    ANSWER:
+    """
 
     response = ollama.chat(
         model=MODEL_NAME,

@@ -39,7 +39,7 @@ def run_assistant(user_query: str):
     if route == "hybrid":
         structured_result = route_structured_query(user_query)
 
-        hybrid_answer = answer_with_hybrid(
+        hybrid_response = answer_with_hybrid(
             user_query,
             structured_result,
             k=4
@@ -48,7 +48,8 @@ def run_assistant(user_query: str):
         return {
             "type": "hybrid",
             "router_reason": classification["reason"],
-            "answer": hybrid_answer,
+            "answer": hybrid_response["answer"],
+            "sources": hybrid_response["sources"],
             "raw_result": structured_result,
         }
 

@@ -19,19 +19,33 @@ def build_context_from_docs(docs) -> str:
     return "\n\n".join(context_parts)
 
 
-def format_sources(docs) -> str:
-    sources = []
+def format_sources(docs):
+    seen = set()
+    formatted = []
 
-    for i, doc in enumerate(docs, start=1):
+    source_number = 1
+
+    for doc in docs:
         metadata = doc.metadata
 
-        title = metadata.get("title", "Unknown title")
-        page = metadata.get("page_label", metadata.get("page", "Unknown page"))
         source = metadata.get("source", "Unknown source")
+        page = metadata.get("page_label", metadata.get("page", "N/A"))
+        title = metadata.get("title", "Unknown title")
 
-        sources.append(f"[{i}] {title} — page {page} — {source}")
+        key = (source, page)
 
-    return "\n".join(sources)
+        if key in seen:
+            continue
+
+        seen.add(key)
+
+        formatted.append(
+            f"[{source_number}] {title} — page {page} — {source}"
+        )
+
+        source_number += 1
+
+    return "\n".join(formatted)
 
 
 def answer_with_rag(question: str, k: int = 4) -> str:

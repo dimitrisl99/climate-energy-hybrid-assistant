@@ -21,15 +21,22 @@ def generate_hybrid_answer(question: str, structured_result, rag_docs) -> str:
     2. the retrieved document context
 
     Rules:
+    - Keep the answer concise and well structured.
+    - Start with the key comparison from the structured data.
+    - Use bullet points where helpful.
     - Use the structured data for exact numbers, rankings, and country comparisons.
     - Use the document context only for explanations that are explicitly supported.
+    - If the document context is EU-level, clearly say that it provides EU-level context, not country-specific causality.
     - Do not invent values.
     - Do not infer country-specific causes unless the document context explicitly supports them.
-    - If the document context is EU-level, say it provides EU-level context, not country-specific causality.
-    - Avoid speculative phrases like "could be attributed to" unless the evidence is directly provided.
-    - If something is not supported by the provided data or documents, say so clearly.
+    - Avoid speculative phrases such as "could be attributed to", "may be due to", or "likely because".
+    - If something is not supported by the provided data or documents, state it clearly.
     - Do not provide general explanations after saying that evidence is not available.
-    - End the answer after clearly stating what is supported and what is not supported.
+    - End the answer after summarizing what is supported and what is not supported.
+    - Maximum length: 180 words.
+    - Avoid long report-style sections.
+    - Prefer short assistant-style responses.
+    - Use at most 3 section headings.
 
     QUESTION:
     {question}
@@ -52,9 +59,12 @@ def generate_hybrid_answer(question: str, structured_result, rag_docs) -> str:
 
     answer = response["message"]["content"]
 
-    return f"{answer}\n\nSources:\n{sources}"
+    return {
+        "answer": answer,
+        "sources": sources,
+    }
 
 
-def answer_with_hybrid(question: str, structured_result, k: int = 4) -> str:
+def answer_with_hybrid(question: str, structured_result, k: int = 4) -> dict:
     rag_docs = retrieve_documents(question, k=k)
     return generate_hybrid_answer(question, structured_result, rag_docs)
