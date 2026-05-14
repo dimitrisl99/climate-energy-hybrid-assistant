@@ -22,7 +22,13 @@ def route_structured_query(user_query: str):
     query = user_query.lower()
     latest_year = latest_year_with_co2()
 
-    if "top" in query and ("emitters" in query or "emissions" in query):
+    if (
+            ("top" in query and ("emitters" in query or "emissions" in query))
+            or ("most co2" in query)
+            or ("emit the most" in query)
+            or ("highest co2" in query)
+            or ("highest emissions" in query)
+    ):
         return top_emitters(latest_year, 10)
 
     if "greece" in query and ("emissions" in query or "co2" in query):

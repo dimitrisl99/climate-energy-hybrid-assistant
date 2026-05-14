@@ -1,4 +1,4 @@
-from src.router.main_router import is_structured_query
+from src.router.llm_router import classify_query_with_llm
 from src.router.structured_router import route_structured_query
 
 from src.generation.structured_answer_generator import (
@@ -9,7 +9,10 @@ from src.rag.rag_answerer import answer_with_rag
 
 
 def run_assistant(user_query: str):
-    if is_structured_query(user_query):
+    classification = classify_query_with_llm(user_query)
+    route = classification["route"]
+
+    if route == "structured":
         structured_result = route_structured_query(user_query)
 
         answer = generate_structured_answer(
@@ -19,14 +22,34 @@ def run_assistant(user_query: str):
 
         return {
             "type": "structured",
+            "router_reason": classification["reason"],
             "answer": answer,
             "raw_result": structured_result,
+        }
+
+    if route == "rag":
+        rag_answer = answer_with_rag(user_query)
+
+        return {
+            "type": "rag",
+            "router_reason": classification["reason"],
+            "answer": rag_answer,
+        }
+
+    if route == "hybrid":
+        rag_answer = answer_with_rag(user_query)
+
+        return {
+            "type": "hybrid",
+            "router_reason": classification["reason"],
+            "answer": rag_answer,
         }
 
     rag_answer = answer_with_rag(user_query)
 
     return {
         "type": "rag",
+        "router_reason": "Fallback route.",
         "answer": rag_answer,
     }
 
@@ -38,6 +61,7 @@ if __name__ == "__main__":
         "compare Greece Germany France",
         "What are the main climate risks in Europe?",
         "What are the EU climate neutrality targets?",
+        "Compare Greece and Germany emissions and explain what this means.",
     ]
 
     for query in test_queries:
@@ -49,8 +73,6 @@ if __name__ == "__main__":
         result = run_assistant(query)
 
         print(f"\nQUERY TYPE: {result['type']}")
+        print(f"ROUTER REASON: {result['router_reason']}")
         print("\nANSWER:\n")
-
         print(result["answer"])
-
-        print("\n")

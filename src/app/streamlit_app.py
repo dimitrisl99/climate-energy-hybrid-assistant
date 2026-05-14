@@ -48,7 +48,8 @@ if user_query:
         answer = result["answer"]
 
         st.markdown(answer)
-        st.caption(f"Query type: `{result['type']}`")
+        if "router_reason" in result:
+            st.caption(f"Router reason: {result['router_reason']}")
 
         st.session_state.messages.append(
             {"role": "assistant", "content": answer}
@@ -66,7 +67,12 @@ if st.session_state.last_result:
 
     if result["type"] == "structured" and "raw_result" in result:
         with st.expander("Show raw structured result"):
-            st.dataframe(result["raw_result"])
+            raw_result = result["raw_result"]
+
+            if hasattr(raw_result, "shape"):
+                st.dataframe(raw_result)
+            else:
+                st.write(raw_result)
 
     if st.button("Clear chat"):
         st.session_state.messages = []
