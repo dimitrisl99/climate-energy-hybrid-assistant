@@ -8,6 +8,7 @@ st.set_page_config(
     layout="wide",
 )
 
+
 st.title("🌍 Climate Energy Hybrid Assistant")
 
 st.markdown(
