@@ -1,6 +1,6 @@
 from src.router.llm_router import classify_query_with_llm
 from src.router.structured_router import route_structured_query
-
+from src.generation.hybrid_answer_generator import answer_with_hybrid
 from src.generation.structured_answer_generator import (
     generate_structured_answer,
 )
@@ -37,12 +37,19 @@ def run_assistant(user_query: str):
         }
 
     if route == "hybrid":
-        rag_answer = answer_with_rag(user_query)
+        structured_result = route_structured_query(user_query)
+
+        hybrid_answer = answer_with_hybrid(
+            user_query,
+            structured_result,
+            k=4
+        )
 
         return {
             "type": "hybrid",
             "router_reason": classification["reason"],
-            "answer": rag_answer,
+            "answer": hybrid_answer,
+            "raw_result": structured_result,
         }
 
     rag_answer = answer_with_rag(user_query)

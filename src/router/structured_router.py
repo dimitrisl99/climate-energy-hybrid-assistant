@@ -31,14 +31,14 @@ def route_structured_query(user_query: str):
     ):
         return top_emitters(latest_year, 10)
 
-    if "greece" in query and ("emissions" in query or "co2" in query):
-        return country_emissions("Greece").tail(10)
-
     if "compare" in query:
         countries = extract_countries_from_query(user_query)
 
         if countries:
             return compare_countries(countries, latest_year)
+
+    if "greece" in query and ("emissions" in query or "co2" in query):
+        return country_emissions("Greece").tail(10)
 
     return "I could not route this query yet."
 
