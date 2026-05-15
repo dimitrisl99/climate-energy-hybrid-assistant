@@ -6,7 +6,7 @@ from rank_bm25 import BM25Okapi
 
 from src.rag.chunk_documents import chunk_documents
 from src.rag.retriever import retrieve_documents
-
+from src.rag.reranker import rerank_documents
 
 def tokenize(text: str) -> list[str]:
     return text.lower().split()
@@ -78,18 +78,54 @@ def reciprocal_rank_fusion(
 
     return [doc_map[key] for key in ranked_keys[:final_k]]
 
+def deduplicate_documents(docs: List[Document]) -> List[Document]:
+    seen = set()
+    unique_docs = []
 
-def retrieve_hybrid(query: str, dense_k: int = 8, bm25_k: int = 8, final_k: int = 5):
+    for doc in docs:
+        metadata = doc.metadata
+        source = metadata.get("source", "")
+        page = metadata.get("page", "")
+        text_preview = doc.page_content[:150]
+
+        key = (source, page, text_preview)
+
+        if key in seen:
+            continue
+
+        seen.add(key)
+        unique_docs.append(doc)
+
+    return unique_docs
+
+
+def retrieve_hybrid(
+    query: str,
+    dense_k: int = 10,
+    bm25_k: int = 10,
+    fusion_k: int = 10,
+    final_k: int = 5,
+    use_reranker: bool = True,
+):
     dense_docs = retrieve_documents(query, k=dense_k)
     bm25_docs = retrieve_bm25(query, k=bm25_k)
 
-    hybrid_docs = reciprocal_rank_fusion(
+    fused_docs = reciprocal_rank_fusion(
         dense_docs=dense_docs,
         bm25_docs=bm25_docs,
-        final_k=final_k,
+        final_k=fusion_k,
     )
 
-    return hybrid_docs
+    if use_reranker:
+        reranked_docs = rerank_documents(
+            query=query,
+            docs=fused_docs,
+            top_k=fusion_k,
+        )
+
+        unique_docs = deduplicate_documents(reranked_docs)
+
+        return unique_docs[:final_k]
 
 
 if __name__ == "__main__":
