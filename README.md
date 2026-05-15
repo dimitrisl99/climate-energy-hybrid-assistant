@@ -1,95 +1,206 @@
 # 🌍 Climate Energy Hybrid Assistant
 
-A hybrid AI assistant that combines:
+An enterprise-style hybrid AI assistant for climate and energy intelligence.
 
-- **Structured querying** over climate & emissions datasets
-- **Retrieval-Augmented Generation (RAG)** over climate reports and policy PDFs
-- **Local open-source LLM generation** using Qwen via Ollama
+This project combines:
 
-The project demonstrates a more realistic enterprise-style GenAI architecture where the assistant can intelligently route between:
-- structured analytics queries
+- 📊 Structured climate analytics over emissions datasets
+- 📚 Retrieval-Augmented Generation (RAG) over climate reports and policy documents
+- 🤖 Local open-source LLM generation using Qwen via Ollama
+- 🧭 LLM-based intelligent routing between query types
+- 🔀 Hybrid answer generation combining structured data + retrieved context
+
+The assistant can dynamically decide whether a user query should be answered using:
+- structured emissions data
 - semantic document retrieval
-- grounded answer generation
+- or a hybrid combination of both
 
 ---
 
 # 🚀 Features
 
-## 📊 Structured Query Layer
-Query climate and emissions datasets using natural language.
+## 📊 Structured Query Engine
+
+Natural language querying over climate and emissions datasets.
 
 Example queries:
-- `show me the top emitters`
-- `compare Greece Germany France`
-- `show Greece CO2 emissions`
 
-The assistant retrieves real data from structured datasets and generates grounded summaries using an LLM.
+```text
+show me the top emitters
+compare Greece Germany France
+show Greece CO2 emissions
+```
+
+The assistant retrieves real structured data and generates grounded summaries using a local LLM.
 
 ---
 
 ## 📚 RAG Pipeline
-Semantic retrieval over climate and energy reports.
+
+Retrieval-Augmented Generation over climate and energy reports.
 
 Current document sources include:
-- EU Climate Action reports
-- European Climate Risk Assessment
-- IPCC reports
 
-Pipeline:
+- EU Climate Action Progress Reports
+- European Climate Risk Assessment (EEA)
+- IPCC AR6 Reports
+- EU Climate Policy Documents
+
+Pipeline architecture:
 
 ```text
-PDFs → Chunking → Embeddings → ChromaDB → Retrieval → LLM Answer
+PDFs
+  ↓
+Chunking
+  ↓
+Embeddings
+  ↓
+ChromaDB Vector Store
+  ↓
+Hybrid Retrieval (Dense + BM25)
+  ↓
+LLM Grounded Answer Generation
 ```
+
+---
+
+## 🔀 Hybrid Retrieval
+
+The project uses hybrid retrieval combining:
+
+- Dense semantic retrieval
+- BM25 keyword retrieval
+- Reciprocal Rank Fusion (RRF)
+
+This improves:
+- retrieval relevance
+- keyword matching
+- factual grounding
+- robustness for enterprise-style search
+
+---
+
+## 🧭 LLM-Based Routing
+
+An LLM router dynamically classifies queries into:
+
+- `structured`
+- `rag`
+- `hybrid`
+
+Examples:
+
+| Query | Route |
+|---|---|
+| `show me the top emitters` | structured |
+| `What are the climate risks in Europe?` | rag |
+| `Compare Greece and Germany emissions and explain what this means` | hybrid |
+
+---
 
 ## 🤖 Local Open-Source LLM
 
 Uses:
-```
+
+```text
 Qwen2.5-7B-Instruct
 via Ollama
 ```
-No external API required.
 
-## 🛠 Tech Stack
+Benefits:
+
+- Fully local inference
+- No external API calls
+- Lower operational cost
+- Privacy-friendly deployment
+
+---
+
+# 🛠 Tech Stack
+
 - Python
 - Pandas
 - ChromaDB
 - LangChain
 - Sentence Transformers
+- BM25 (`rank-bm25`)
 - Ollama
 - Qwen2.5
-- Streamlit (coming soon)
+- Streamlit
 
-## 📂 Project Structure
+---
 
-```commandline
+# 🖥 Streamlit UI
+
+Interactive assistant UI featuring:
+
+- Chat-style interface
+- Clickable example prompts
+- LLM routing visualization
+- Source-grounded answers
+- Hybrid query support
+- Expandable citations & metadata
+
+---
+
+# 📂 Project Structure
+
+```text
 src/
-├── app/
-├── generation/
-├── ingestion/
-├── rag/
-├── router/
-└── structured_query/
+├── app/                  # Main assistant orchestration
+├── generation/           # LLM answer generators
+├── ingestion/            # Data ingestion pipeline
+├── rag/                  # Retrieval pipeline
+├── router/               # LLM routing logic
+├── structured_query/     # Structured analytics engine
+└── ui/                   # Streamlit frontend
 
 data/
 ├── raw/
+│   ├── csv/
+│   └── pdfs/
 ├── processed/
 └── db/
 ```
 
-## 🔮 Future Improvements
+---
 
-- Semantic chunking
-- Hybrid BM25 + dense retrieval
-- Reranking
-- LLM-based routing
-- Text-to-SQL
-- Streamlit UI
-- Streaming responses
+# 🔬 Example Capabilities
+
+### Structured Analytics
+
+```text
+Compare Germany France Greece
+```
+
+### RAG over Climate Reports
+
+```text
+What are the main climate risks in Europe?
+```
+
+### Hybrid Reasoning
+
+```text
+Compare Greece and Germany emissions and explain what this means
+```
+
+---
+
+# 🔮 Future Improvements
+
+- Cross-encoder reranking
 - Retrieval evaluation pipeline
-- Citation-aware answer generation
+- Answer faithfulness evaluation
+- Streaming responses
+- Citation-aware UI
+- Advanced semantic chunking
 - Tool calling / agents
+- Text-to-SQL experimentation
+- Multi-document conversational memory
 
-## Author 
+---
+
+# 👨‍💻 Author
 
 Dimitris Loukakis

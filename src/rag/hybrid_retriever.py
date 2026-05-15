@@ -1,4 +1,4 @@
-from functools import lru_cache #κράτα το cache αποτέλεσμα της συνάρτησης
+from functools import lru_cache
 from typing import List
 
 from langchain_core.documents import Document
@@ -12,26 +12,26 @@ def tokenize(text: str) -> list[str]:
     return text.lower().split()
 
 
-@lru_cache(maxsize=1) #τρέξε αυτή τη function μια φορά και μετά κράτα το αποτέλεσμα στην μνήμη
+@lru_cache(maxsize=1)
 def load_chunks_for_bm25():
     print("Loading chunks for BM25...")
-    chunks = chunk_documents() #φορτώνει τα pdf και τα κάνει chunk
+    chunks = chunk_documents()
 
-    tokenized_corpus = [ #μετατρέπει κάθε chunk σε λίστα tokens
+    tokenized_corpus = [
         tokenize(chunk.page_content)
         for chunk in chunks
     ]
 
-    bm25 = BM25Okapi(tokenized_corpus) #χτίζεις τον BM25 index
+    bm25 = BM25Okapi(tokenized_corpus)
 
     return chunks, bm25
 
-#εδώ γίνεται το keyword search
+
 def retrieve_bm25(query: str, k: int = 10) -> List[Document]:
-    chunks, bm25 = load_chunks_for_bm25() #Φορτώνει cached chunks + BM25 index.
+    chunks, bm25 = load_chunks_for_bm25()
 
     tokenized_query = tokenize(query)
-    scores = bm25.get_scores(tokenized_query) #Υπολογίζει BM25 score για κάθε chunk
+    scores = bm25.get_scores(tokenized_query)
 
     ranked_indices = sorted(
         range(len(scores)),
@@ -50,7 +50,7 @@ def document_key(doc: Document) -> tuple:
 
     return source, page, text_preview
 
-#Εδώ γίνονται ουσιαστικά όλα. Παίρνει 2 rankings dense_docs, bm25_docs και τα ενώνει.
+
 def reciprocal_rank_fusion(
     dense_docs: List[Document],
     bm25_docs: List[Document],
