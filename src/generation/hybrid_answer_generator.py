@@ -1,7 +1,7 @@
 import ollama
 
 from src.rag.rag_answerer import build_context_from_docs, format_sources
-from src.rag.retriever import retrieve_documents
+from src.rag.hybrid_retriever import retrieve_hybrid
 from src.generation.structured_answer_generator import dataframe_to_context
 
 
@@ -37,6 +37,8 @@ def generate_hybrid_answer(question: str, structured_result, rag_docs) -> str:
     - Avoid long report-style sections.
     - Prefer short assistant-style responses.
     - Use at most 3 section headings.
+    - Treat retrieved report context as EU-level unless it explicitly names the country being discussed.
+    - Do not assign sectoral trends to Germany, Greece, or any country unless that country name appears in the same retrieved passage.
 
     QUESTION:
     {question}
@@ -66,5 +68,5 @@ def generate_hybrid_answer(question: str, structured_result, rag_docs) -> str:
 
 
 def answer_with_hybrid(question: str, structured_result, k: int = 4) -> dict:
-    rag_docs = retrieve_documents(question, k=k)
+    rag_docs = retrieve_hybrid(question, final_k=k)
     return generate_hybrid_answer(question, structured_result, rag_docs)

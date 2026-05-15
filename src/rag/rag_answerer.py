@@ -1,4 +1,4 @@
-from src.rag.retriever import retrieve_documents
+from src.rag.hybrid_retriever import retrieve_hybrid
 from src.generation.answer_generator import generate_answer
 
 
@@ -49,7 +49,7 @@ def format_sources(docs):
 
 
 def answer_with_rag(question: str, k: int = 4) -> str:
-    docs = retrieve_documents(question, k=k)
+    docs = retrieve_hybrid(question, final_k=k)
     context = build_context_from_docs(docs)
 
     answer = generate_answer(question, context)
