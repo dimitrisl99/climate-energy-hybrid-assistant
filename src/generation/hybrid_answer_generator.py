@@ -29,7 +29,16 @@ def generate_hybrid_answer(question: str, structured_result, rag_docs) -> str:
     - If the document context is EU-level, clearly say that it provides EU-level context, not country-specific causality.
     - Do not invent values.
     - Do not infer country-specific causes unless the document context explicitly supports them.
-    - Avoid speculative phrases such as "could be attributed to", "may be due to", or "likely because".
+    - NEVER speculate about causes or explanations not explicitly supported by the provided context.
+    - Do not use phrases like:
+      "could be attributed to",
+      "may be due to",
+      "likely because",
+      "possibly because".
+    - If the reason is not explicitly stated in the context, say:
+      "The provided documents do not explain the reasons for this difference."
+    - Inline citations must only be used for claims supported by retrieved documents.
+    - Do not cite structured data claims with document citations unless the document explicitly supports them.
     - If something is not supported by the provided data or documents, state it clearly.
     - Do not provide general explanations after saying that evidence is not available.
     - End the answer after summarizing what is supported and what is not supported.
@@ -39,7 +48,10 @@ def generate_hybrid_answer(question: str, structured_result, rag_docs) -> str:
     - Use at most 3 section headings.
     - Treat retrieved report context as EU-level unless it explicitly names the country being discussed.
     - Do not assign sectoral trends to Germany, Greece, or any country unless that country name appears in the same retrieved passage.
-
+    - Add inline citations using the source ids, like [1] or [2], when using document context.
+    - Structured data values do not need document citations.
+    - Every explanation based on retrieved documents should include an inline citation.
+    
     QUESTION:
     {question}
 

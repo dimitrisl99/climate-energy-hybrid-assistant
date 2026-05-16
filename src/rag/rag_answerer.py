@@ -12,7 +12,7 @@ def build_context_from_docs(docs) -> str:
         page = metadata.get("page_label", metadata.get("page", "Unknown page"))
 
         context_parts.append(
-            f"[Source {i}] {title}, page {page}\n"
+            f"[{i}] Source: {title}, page {page}\n"
             f"{doc.page_content}"
         )
 
