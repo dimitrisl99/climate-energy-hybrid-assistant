@@ -2,6 +2,7 @@ from pathlib import Path
 
 from langchain_chroma import Chroma
 from langchain_huggingface import HuggingFaceEmbeddings
+from functools import lru_cache
 
 
 CHROMA_DIR = Path("data/db/chroma")
@@ -9,6 +10,7 @@ COLLECTION_NAME = "climate_energy_docs"
 
 EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 
+@lru_cache(maxsize=1)
 def load_vector_store():
     embeddings = HuggingFaceEmbeddings(
         model_name=EMBEDDING_MODEL
