@@ -1,6 +1,12 @@
+import sys
+from pathlib import Path
+
 import streamlit as st
 
-from src.app.hybrid_assistant import run_assistant #main orchestrator
+ROOT_DIR = Path(__file__).resolve().parents[2]
+sys.path.append(str(ROOT_DIR))
+
+from src.app.hybrid_assistant import run_assistant
 
 st.set_page_config(
     page_title="Climate Energy Assistant",
@@ -122,7 +128,10 @@ if user_query:
 
     with st.chat_message("assistant"):
         with st.spinner("Routing query and generating answer..."):
-            result = run_assistant(user_query)
+            result = run_assistant(
+                user_query,
+                chat_history=st.session_state.messages
+            )
 
         st.session_state.last_result = result
 

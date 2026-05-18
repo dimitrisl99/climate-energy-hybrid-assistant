@@ -1,15 +1,48 @@
 from src.router.llm_router import classify_query_with_llm
 from src.router.structured_router import route_structured_query
 from src.generation.hybrid_answer_generator import answer_with_hybrid
-from src.generation.structured_answer_generator import (
-    generate_structured_answer,
-)
-
+from src.generation.structured_answer_generator import generate_structured_answer
 from src.rag.rag_answerer import answer_with_rag
 
 
-def run_assistant(user_query: str):
-    classification = classify_query_with_llm(user_query)
+def build_conversation_context(chat_history: list[dict], max_turns: int = 4) -> str:
+    recent_messages = chat_history[-max_turns:]
+    context_lines = []
+
+    for message in recent_messages:
+        role = message.get("role", "unknown")
+        content = message.get("content", "")
+
+        if content:
+            context_lines.append(f"{role.upper()}: {content}")
+
+    return "\n".join(context_lines)
+
+
+def build_routing_query(user_query: str, chat_history: list[dict]) -> str:
+    conversation_context = build_conversation_context(chat_history)
+
+    if not conversation_context:
+        return user_query
+
+    return f"""
+Conversation so far:
+{conversation_context}
+
+Current user question:
+{user_query}
+"""
+
+
+def run_assistant(user_query: str, chat_history: list[dict] | None = None):
+    chat_history = chat_history or []
+
+    routing_query = build_routing_query(
+        user_query=user_query,
+        chat_history=chat_history,
+    )
+
+    classification = classify_query_with_llm(routing_query)
     route = classification["route"]
 
     if route == "structured":
@@ -17,7 +50,7 @@ def run_assistant(user_query: str):
 
         answer = generate_structured_answer(
             user_query,
-            structured_result
+            structured_result,
         )
 
         return {
@@ -42,7 +75,7 @@ def run_assistant(user_query: str):
         hybrid_response = answer_with_hybrid(
             user_query,
             structured_result,
-            k=4
+            k=4,
         )
 
         return {
@@ -63,7 +96,6 @@ def run_assistant(user_query: str):
 
 
 if __name__ == "__main__":
-
     test_queries = [
         "show me the top emitters",
         "compare Greece Germany France",
@@ -73,7 +105,6 @@ if __name__ == "__main__":
     ]
 
     for query in test_queries:
-
         print("\n" + "=" * 80)
         print(f"USER QUERY: {query}")
         print("=" * 80)
