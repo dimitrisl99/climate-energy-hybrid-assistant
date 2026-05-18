@@ -3,6 +3,7 @@ from src.router.structured_router import route_structured_query
 from src.generation.hybrid_answer_generator import answer_with_hybrid
 from src.generation.structured_answer_generator import generate_structured_answer
 from src.rag.rag_answerer import answer_with_rag
+from src.router.query_rewriter import rewrite_query_with_context
 
 
 def build_conversation_context(chat_history: list[dict], max_turns: int = 4) -> str:
@@ -36,6 +37,7 @@ Current user question:
 
 def run_assistant(user_query: str, chat_history: list[dict] | None = None):
     chat_history = chat_history or []
+    conversation_context = build_conversation_context(chat_history)
 
     routing_query = build_routing_query(
         user_query=user_query,
@@ -45,8 +47,19 @@ def run_assistant(user_query: str, chat_history: list[dict] | None = None):
     classification = classify_query_with_llm(routing_query)
     route = classification["route"]
 
+    rewritten_query = user_query
+
+    if conversation_context and route in ["structured", "hybrid"]:
+        rewritten_query = rewrite_query_with_context(
+            user_query=user_query,
+            conversation_context=conversation_context,
+        )
+
+        print("\nREWRITTEN QUERY:")
+        print(rewritten_query)
+
     if route == "structured":
-        structured_result = route_structured_query(user_query)
+        structured_result = route_structured_query(rewritten_query)
 
         answer = generate_structured_answer(
             user_query,
