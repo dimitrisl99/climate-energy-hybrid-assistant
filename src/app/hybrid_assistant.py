@@ -1,9 +1,11 @@
 from src.router.llm_router import classify_query_with_llm
+from src.router.query_rewriter import rewrite_query_with_context
 from src.router.structured_router import route_structured_query
+
 from src.generation.hybrid_answer_generator import answer_with_hybrid
 from src.generation.structured_answer_generator import generate_structured_answer
+
 from src.rag.rag_answerer import answer_with_rag
-from src.router.query_rewriter import rewrite_query_with_context
 
 
 def build_conversation_context(chat_history: list[dict], max_turns: int = 4) -> str:
@@ -37,6 +39,7 @@ Current user question:
 
 def run_assistant(user_query: str, chat_history: list[dict] | None = None):
     chat_history = chat_history or []
+
     conversation_context = build_conversation_context(chat_history)
 
     routing_query = build_routing_query(
@@ -49,7 +52,7 @@ def run_assistant(user_query: str, chat_history: list[dict] | None = None):
 
     rewritten_query = user_query
 
-    if conversation_context and route in ["structured", "hybrid"]:
+    if conversation_context and route in ["structured", "rag", "hybrid"]:
         rewritten_query = rewrite_query_with_context(
             user_query=user_query,
             conversation_context=conversation_context,
@@ -62,31 +65,33 @@ def run_assistant(user_query: str, chat_history: list[dict] | None = None):
         structured_result = route_structured_query(rewritten_query)
 
         answer = generate_structured_answer(
-            user_query,
+            rewritten_query,
             structured_result,
         )
 
         return {
             "type": "structured",
             "router_reason": classification["reason"],
+            "rewritten_query": rewritten_query,
             "answer": answer,
             "raw_result": structured_result,
         }
 
     if route == "rag":
-        rag_answer = answer_with_rag(user_query)
+        rag_answer = answer_with_rag(rewritten_query)
 
         return {
             "type": "rag",
             "router_reason": classification["reason"],
+            "rewritten_query": rewritten_query,
             "answer": rag_answer,
         }
 
     if route == "hybrid":
-        structured_result = route_structured_query(user_query)
+        structured_result = route_structured_query(rewritten_query)
 
         hybrid_response = answer_with_hybrid(
-            user_query,
+            rewritten_query,
             structured_result,
             k=4,
         )
@@ -94,16 +99,18 @@ def run_assistant(user_query: str, chat_history: list[dict] | None = None):
         return {
             "type": "hybrid",
             "router_reason": classification["reason"],
+            "rewritten_query": rewritten_query,
             "answer": hybrid_response["answer"],
             "sources": hybrid_response["sources"],
             "raw_result": structured_result,
         }
 
-    rag_answer = answer_with_rag(user_query)
+    rag_answer = answer_with_rag(rewritten_query)
 
     return {
         "type": "rag",
         "router_reason": "Fallback route.",
+        "rewritten_query": rewritten_query,
         "answer": rag_answer,
     }
 
@@ -126,5 +133,6 @@ if __name__ == "__main__":
 
         print(f"\nQUERY TYPE: {result['type']}")
         print(f"ROUTER REASON: {result['router_reason']}")
+        print(f"REWRITTEN QUERY: {result.get('rewritten_query')}")
         print("\nANSWER:\n")
         print(result["answer"])

@@ -22,6 +22,20 @@ Rules:
   include them explicitly.
 - Do not answer the question.
 - Only return the rewritten query.
+- If the latest question is a follow-up, preserve the specific topic from the previous user question.
+- Do not rewrite a follow-up into a generic document-level question.
+- If the previous user question mentioned a target, country, metric, sector, or policy, include that in the rewritten query.
+
+Example:
+Conversation:
+USER: What are the EU climate neutrality targets?
+ASSISTANT: The EU has committed to climate neutrality by 2050...
+
+Latest user question:
+What challenges are mentioned?
+
+Rewritten query:
+What challenges are mentioned regarding the EU climate neutrality targets?
 
 Conversation:
 {conversation_context}
