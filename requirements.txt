@@ -16,3 +16,5 @@ langchain-text-splitters
 ollama
 tabulate
 rank-bm25
+fastapi
+uvicorn

@@ -1,12 +1,11 @@
 import sys
+import requests
 from pathlib import Path
-
 import streamlit as st
-
 ROOT_DIR = Path(__file__).resolve().parents[2]
 sys.path.append(str(ROOT_DIR))
 
-from src.app.hybrid_assistant import run_assistant
+API_URL = "http://127.0.0.1:8000/ask"
 
 st.set_page_config(
     page_title="Climate Energy Assistant",
@@ -119,6 +118,8 @@ if "example_prompt" in st.session_state:
     del st.session_state.example_prompt
 
 if user_query:
+    previous_messages = st.session_state.messages.copy()
+
     st.session_state.messages.append(
         {"role": "user", "content": user_query}
     )
@@ -128,10 +129,15 @@ if user_query:
 
     with st.chat_message("assistant"):
         with st.spinner("Routing query and generating answer..."):
-            result = run_assistant(
-                user_query,
-                chat_history=st.session_state.messages
-            )
+            payload = {
+                "question": user_query,
+                "chat_history": previous_messages,
+            }
+
+            response = requests.post(API_URL, json=payload, timeout=120)
+            response.raise_for_status()
+
+            result = response.json()
 
         st.session_state.last_result = result
 
@@ -142,13 +148,13 @@ if user_query:
             with st.expander("Sources"):
                 st.markdown(result["sources"])
 
-        if result["type"] == "structured":
+        if result["route"] == "structured":
             st.warning("Structured Query")
 
-        elif result["type"] == "rag":
+        elif result["route"] == "rag":
             st.info("RAG Query")
 
-        elif result["type"] == "hybrid":
+        elif result["route"] == "hybrid":
             st.success("Hybrid Query")
 
         if "router_reason" in result:
