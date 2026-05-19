@@ -6,6 +6,7 @@ ROOT_DIR = Path(__file__).resolve().parents[2]
 sys.path.append(str(ROOT_DIR))
 
 API_URL = "http://127.0.0.1:8000/ask"
+FEEDBACK_API_URL = "http://127.0.0.1:8000/feedback"
 
 st.set_page_config(
     page_title="Climate Energy Assistant",
@@ -138,11 +139,52 @@ if user_query:
             response.raise_for_status()
 
             result = response.json()
+            if not result.get("success", False):
+                st.error("The API returned an unsuccessful response.")
+                st.stop()
 
         st.session_state.last_result = result
 
         answer = result["answer"]
         st.markdown(answer)
+
+        feedback_col1, feedback_col2 = st.columns(2)
+
+        with feedback_col1:
+            useful = st.button(
+                "👍 Useful",
+                key=f"useful_{len(st.session_state.messages)}"
+            )
+
+        with feedback_col2:
+            not_useful = st.button(
+                "👎 Not useful",
+                key=f"not_useful_{len(st.session_state.messages)}"
+            )
+
+        feedback_comment = st.text_area(
+            "Optional feedback comment",
+            key=f"comment_{len(st.session_state.messages)}"
+        )
+
+        if useful or not_useful:
+            feedback_payload = {
+                "question": user_query,
+                "answer": answer,
+                "route": result["route"],
+                "rating": "useful" if useful else "not_useful",
+                "comment": feedback_comment,
+            }
+
+            feedback_response = requests.post(
+                FEEDBACK_API_URL,
+                json=feedback_payload,
+                timeout=30,
+            )
+
+            feedback_response.raise_for_status()
+
+            st.success("Feedback submitted successfully!")
 
         if "sources" in result and result["sources"]:
             with st.expander("Sources"):
