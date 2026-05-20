@@ -3,13 +3,24 @@ from pydantic import BaseModel
 import csv
 from datetime import datetime
 from pathlib import Path
-
+from fastapi.middleware.cors import CORSMiddleware
 from src.app.hybrid_assistant import run_assistant
 
 
 app = FastAPI(
     title="Climate Energy Assistant API",
     version="1.0.0",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 FEEDBACK_FILE = Path("data/feedback/feedback.csv")
 
