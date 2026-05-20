@@ -8,3 +8,14 @@ data/db/chroma/
 .env
 
 *.log
+
+# React / Vite
+node_modules/
+frontend/node_modules/
+
+dist/
+frontend/dist/
+
+# OS
+.DS_Store
+Thumbs.db
