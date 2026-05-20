@@ -11,8 +11,10 @@ This project combines:
 - 🔀 Hybrid answer generation combining structured data + retrieved context
 - 🧠 Conversational memory with contextual query rewriting
 - 🎯 Hybrid retrieval with reranking and evaluation pipelines
+- ⚡ Modern React frontend with enterprise-style UI
 
 The assistant can dynamically decide whether a user query should be answered using:
+
 - structured emissions data
 - semantic document retrieval
 - or a hybrid combination of both
@@ -25,7 +27,7 @@ The assistant can dynamically decide whether a user query should be answered usi
 
 Natural language querying over climate and emissions datasets.
 
-Example queries:
+### Example Queries
 
 ```text
 show me the top emitters
@@ -41,9 +43,9 @@ The assistant retrieves real structured data and generates grounded summaries us
 
 The assistant supports multi-turn conversations with contextual understanding.
 
-Example:
+### Example Conversation
 
-```text
+```bash
 User: Compare Greece Germany France
 User: What about Italy?
 ```
@@ -70,7 +72,7 @@ Current document sources include:
 - IPCC AR6 Reports
 - EU Climate Policy Documents
 
-Pipeline architecture:
+### Pipeline Architecture
 
 ```text
 PDFs
@@ -112,7 +114,7 @@ This improves:
 
 After retrieval, results are reranked using a cross-encoder model to improve relevance quality.
 
-Benefits:
+### Benefits
 
 - better top-k ranking
 - improved retrieval precision
@@ -129,7 +131,7 @@ An LLM router dynamically classifies queries into:
 - `rag`
 - `hybrid`
 
-Examples:
+### Examples
 
 | Query | Route |
 |---|---|
@@ -147,7 +149,7 @@ Hybrid queries combine:
 - retrieved climate report context
 - grounded LLM explanation
 
-Example:
+### Example Hybrid Query
 
 ```text
 Compare Greece and Germany emissions and explain what this means
@@ -165,26 +167,26 @@ The assistant combines:
 
 RAG and hybrid responses include inline citations and source attribution.
 
-Example:
+### Example
 
 ```text
 The EU is on track to achieve its 2030 emissions target [1].
 ```
 
-With expandable source metadata in the UI.
+The frontend includes expandable source cards and metadata visualization.
 
 ---
 
 ## 🤖 Local Open-Source LLM
 
-Uses:
+### Model
 
 ```text
 Qwen2.5-7B-Instruct
 via Ollama
 ```
 
-Benefits:
+### Benefits
 
 - Fully local inference
 - No external API calls
@@ -193,9 +195,36 @@ Benefits:
 
 ---
 
+# 🖥 Modern React Frontend
+
+The project includes a redesigned enterprise-style React frontend built with:
+
+- React
+- Vite
+- Modern CSS
+- Responsive dashboard layout
+- Chat-style assistant experience
+
+### Frontend Features
+
+- 💬 Chat-based interface
+- 🧠 Conversational memory visualization
+- 📚 Expandable source cards
+- ⚡ Auto-scrolling messages
+- 🎯 Example prompt shortcuts
+- 🧭 Query routing badges
+- 🔀 Hybrid response rendering
+- 🌌 Enterprise-style animated UI
+- 📱 Responsive layout
+
+---
+
 # 🛠 Tech Stack
 
+## Backend
+
 - Python
+- FastAPI
 - Pandas
 - ChromaDB
 - LangChain
@@ -204,51 +233,45 @@ Benefits:
 - Cross-Encoder Rerankers
 - Ollama
 - Qwen2.5
-- Streamlit
 
----
+## Frontend
 
-# 🖥 Streamlit UI
-
-Interactive assistant UI featuring:
-
-- Chat-style interface
-- Conversational memory
-- Clickable example prompts
-- LLM routing visualization
-- Source-grounded answers
-- Hybrid query support
-- Expandable citations & metadata
-- Query routing explanations
-- Structured result visualization
+- React
+- Vite
+- JavaScript
+- Modern CSS
 
 ---
 
 # 📂 Project Structure
 
 ```text
-src/
-├── app/                  # Main assistant orchestration
-├── evaluation/           # Retrieval & answer evaluation
-├── generation/           # LLM answer generators
-├── ingestion/            # Data ingestion pipeline
-├── rag/                  # Retrieval pipeline
-├── router/               # LLM routing logic
-├── structured_query/     # Structured analytics engine
-└── ui/                   # Streamlit frontend
-
-data/
-├── raw/
-│   ├── csv/
-│   └── pdfs/
-├── processed/
-└── db/
-
-tests/
-├── retrieval/
-└── generation/
-
-notebooks/
+climate-energy-assistant/
+│
+├── frontend/
+│   ├── public/
+│   ├── src/
+│   ├── package.json
+│   └── vite.config.js
+│
+├── src/
+│   ├── api/
+│   ├── generation/
+│   ├── rag/
+│   ├── router/
+│   ├── structured_query/
+│   └── memory/
+│
+├── data/
+│   ├── raw/
+│   │   ├── csv/
+│   │   └── pdfs/
+│   └── db/
+│
+├── notebooks/
+├── screenshots/
+├── requirements.txt
+└── README.md
 ```
 
 ---
@@ -283,30 +306,88 @@ This supports enterprise-style RAG validation workflows.
 
 # 🔬 Example Capabilities
 
-### Structured Analytics
+## Structured Analytics
 
 ```text
 Compare Germany France Greece
 ```
 
-### Conversational Structured Querying
+---
 
-```text
-Compare Greece Germany France
-What about Italy?
+## Conversational Structured Querying
+
+```bash
+User: Compare Greece Germany France
+User: What about Italy?
 ```
 
-### RAG over Climate Reports
+---
+
+## RAG over Climate Reports
 
 ```text
 What are the main climate risks in Europe?
 ```
 
-### Hybrid Reasoning
+---
+
+## Hybrid Reasoning
 
 ```text
 Compare Greece and Germany emissions and explain what this means
 ```
+
+---
+
+# ⚙️ Installation
+
+## Clone the Repository
+
+```bash
+git clone https://github.com/YOUR_USERNAME/climate-energy-assistant.git
+cd climate-energy-assistant
+```
+
+---
+
+## Backend Setup
+
+Install Python dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+Run the FastAPI backend:
+
+```bash
+uvicorn src.api.main:app --reload
+```
+
+---
+
+## Frontend Setup
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+---
+
+## Run Ollama
+
+```bash
+ollama run qwen2.5:7b-instruct
+```
+
+---
+
+# 📸 Screenshots
+
+![Frontend REACT.png](screenshots/Frontend%20REACT.png)
+
 
 ---
 
@@ -321,10 +402,11 @@ Compare Greece and Germany emissions and explain what this means
 - Docker deployment
 - Observability & logging
 - Production API serving
-- Authentication & user sessions
+
 
 ---
 
 # 👨‍💻 Author
 
 Dimitris Loukakis
+
