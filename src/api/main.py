@@ -144,17 +144,24 @@ def ask_question_stream(request: QuestionRequest):
             chat_history=chat_history,
         )
 
+        answer = result.get("answer", "")
+        sources = result.get("sources")
+
+        if not sources and "Sources:" in answer:
+            clean_answer, extracted_sources = answer.split("Sources:", 1)
+            answer = clean_answer.strip()
+            sources = extracted_sources.strip()
+
         metadata = {
             "type": "metadata",
             "route": result.get("type"),
             "router_reason": result.get("router_reason"),
             "rewritten_query": result.get("rewritten_query"),
-            "sources": result.get("sources"),
+            "sources": sources,
         }
 
         yield json.dumps(metadata) + "\n"
 
-        answer = result.get("answer", "")
         words = answer.split(" ")
 
         for word in words:
