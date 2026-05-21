@@ -5,6 +5,9 @@ from datetime import datetime
 from pathlib import Path
 from fastapi.middleware.cors import CORSMiddleware
 from src.app.hybrid_assistant import run_assistant
+import json
+import time
+from fastapi.responses import StreamingResponse
 
 
 app = FastAPI(
@@ -22,7 +25,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 FEEDBACK_FILE = Path("data/feedback/feedback.csv")
+
 
 class ChatMessage(BaseModel):
     role: str
@@ -33,12 +38,14 @@ class QuestionRequest(BaseModel):
     question: str
     chat_history: list[ChatMessage] = []
 
+
 class FeedbackRequest(BaseModel):
     question: str
     answer: str
     route: str
     rating: str
     comment: str = ""
+
 
 @app.get("/")
 def root():
@@ -94,6 +101,7 @@ def submit_feedback(request: FeedbackRequest):
         "message": "Feedback submitted successfully",
     }
 
+
 @app.post("/ask")
 def ask_question(request: QuestionRequest):
     chat_history = [
@@ -120,3 +128,47 @@ def ask_question(request: QuestionRequest):
             "model": "Qwen2.5-7B-Instruct via Ollama",
         },
     }
+
+
+@app.post("/ask/stream")
+def ask_question_stream(request: QuestionRequest):
+
+    def generate():
+        chat_history = [
+            message.model_dump()
+            for message in request.chat_history
+        ]
+
+        result = run_assistant(
+            request.question,
+            chat_history=chat_history,
+        )
+
+        metadata = {
+            "type": "metadata",
+            "route": result.get("type"),
+            "router_reason": result.get("router_reason"),
+            "rewritten_query": result.get("rewritten_query"),
+            "sources": result.get("sources"),
+        }
+
+        yield json.dumps(metadata) + "\n"
+
+        answer = result.get("answer", "")
+        words = answer.split(" ")
+
+        for word in words:
+            chunk = {
+                "type": "token",
+                "content": word + " ",
+            }
+
+            yield json.dumps(chunk) + "\n"
+            time.sleep(0.025)
+
+        yield json.dumps({"type": "done"}) + "\n"
+
+    return StreamingResponse(
+        generate(),
+        media_type="application/x-ndjson",
+    )

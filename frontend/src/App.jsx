@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import "./styles.css";
 
-const API_URL = "http://127.0.0.1:8000/ask";
+const API_URL = "http://127.0.0.1:8000/ask/stream";
 
 const exampleQuestions = [
   "Compare Greece Germany France",
@@ -69,65 +69,121 @@ function App() {
     });
   }, [messages, loading]);
 
-  async function sendQuestion(text) {
-    if (!text.trim()) return;
+    async function sendQuestion(text) {
+      if (!text.trim()) return;
 
-    const userMessage = {
-      role: "user",
-      content: text,
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
-
-    setQuestion("");
-    setLoading(true);
-
-    try {
-      const response = await fetch(API_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          question: text,
-          chat_history: messages,
-        }),
-      });
-
-      const data = await response.json();
-
-      const { cleanAnswer, sourceText } =
-        splitAnswerAndSources(
-          data.answer,
-          data.sources
-        );
+      const userMessage = {
+        role: "user",
+        content: text,
+      };
 
       const assistantMessage = {
         role: "assistant",
-        content: cleanAnswer,
-        route: data.route,
-        sources: parseSources(sourceText),
-        rewrittenQuery: data.rewritten_query,
+        content: "",
+        route: null,
+        sources: [],
+        rewrittenQuery: null,
       };
 
+      const historyBeforeNewQuestion = messages;
+
       setMessages((prev) => [
         ...prev,
+        userMessage,
         assistantMessage,
       ]);
-    } catch (error) {
-      console.error(error);
 
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content: "Something went wrong.",
-        },
-      ]);
+      setQuestion("");
+      setLoading(true);
+
+      try {
+        const response = await fetch(API_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            question: text,
+            chat_history: historyBeforeNewQuestion,
+          }),
+        });
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder("utf-8");
+
+        let buffer = "";
+        let streamedAnswer = "";
+
+        while (true) {
+          const { value, done } = await reader.read();
+
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+
+          const lines = buffer.split("\n");
+          buffer = lines.pop();
+
+          for (const line of lines) {
+            if (!line.trim()) continue;
+
+            const event = JSON.parse(line);
+
+            if (event.type === "metadata") {
+              setMessages((prev) => {
+                const updated = [...prev];
+                const lastIndex = updated.length - 1;
+
+                updated[lastIndex] = {
+                  ...updated[lastIndex],
+                  route: event.route,
+                  sources: parseSources(event.sources),
+                  rewrittenQuery: event.rewritten_query,
+                };
+
+                return updated;
+              });
+            }
+
+            if (event.type === "token") {
+              streamedAnswer += event.content;
+
+              setMessages((prev) => {
+                const updated = [...prev];
+                const lastIndex = updated.length - 1;
+
+                updated[lastIndex] = {
+                  ...updated[lastIndex],
+                  content: streamedAnswer,
+                };
+
+                return updated;
+              });
+            }
+
+            if (event.type === "done") {
+              setLoading(false);
+            }
+          }
+        }
+      } catch (error) {
+        console.error(error);
+
+        setMessages((prev) => {
+          const updated = [...prev];
+          const lastIndex = updated.length - 1;
+
+          updated[lastIndex] = {
+            role: "assistant",
+            content: "Something went wrong.",
+          };
+
+          return updated;
+        });
+      }
+
+      setLoading(false);
     }
-
-    setLoading(false);
-  }
 
   function handleSubmit(e) {
     e.preventDefault();
