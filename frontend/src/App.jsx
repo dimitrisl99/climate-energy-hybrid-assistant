@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import "./styles.css";
 
-const API_URL = "http://127.0.0.1:8000/ask/stream";
+const API_URL = "http://localhost:8000/ask/stream";
 
 const exampleQuestions = [
   "Compare Greece Germany France",
