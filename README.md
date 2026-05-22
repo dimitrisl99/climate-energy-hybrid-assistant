@@ -12,6 +12,8 @@ This project combines:
 - 🧠 Conversational memory with contextual query rewriting
 - 🎯 Hybrid retrieval with reranking and evaluation pipelines
 - ⚡ Modern React frontend with enterprise-style UI
+- 🌊 Streaming AI responses
+- 🐳 Dockerized multi-container architecture
 
 The assistant can dynamically decide whether a user query should be answered using:
 
@@ -177,6 +179,23 @@ The frontend includes expandable source cards and metadata visualization.
 
 ---
 
+## 🌊 Streaming Responses
+
+The frontend supports real-time streaming AI responses for a ChatGPT-style experience.
+
+Instead of waiting for the full response, answers appear progressively while the model generates output.
+
+### Streaming Stack
+
+- FastAPI `StreamingResponse`
+- NDJSON streaming
+- Incremental frontend rendering
+- Token-style UI updates
+
+This creates a significantly more interactive and production-style user experience.
+
+---
+
 ## 🤖 Local Open-Source LLM
 
 ### Model
@@ -210,12 +229,37 @@ The project includes a redesigned enterprise-style React frontend built with:
 - 💬 Chat-based interface
 - 🧠 Conversational memory visualization
 - 📚 Expandable source cards
-- ⚡ Auto-scrolling messages
+- ⚡ Streaming responses
 - 🎯 Example prompt shortcuts
 - 🧭 Query routing badges
 - 🔀 Hybrid response rendering
 - 🌌 Enterprise-style animated UI
 - 📱 Responsive layout
+
+---
+
+# 🐳 Dockerized Architecture
+
+The project is fully containerized using Docker and Docker Compose.
+
+### Services
+
+- Frontend container
+- Backend container
+
+### Run Entire Project
+
+```bash
+docker compose up --build
+```
+
+### Benefits of Dockerization
+
+- consistent environments
+- easier deployment
+- simplified onboarding
+- production-style architecture
+- frontend/backend isolation
 
 ---
 
@@ -241,6 +285,11 @@ The project includes a redesigned enterprise-style React frontend built with:
 - JavaScript
 - Modern CSS
 
+## DevOps
+
+- Docker
+- Docker Compose
+
 ---
 
 # 📂 Project Structure
@@ -251,6 +300,7 @@ climate-energy-assistant/
 ├── frontend/
 │   ├── public/
 │   ├── src/
+│   ├── Dockerfile
 │   ├── package.json
 │   └── vite.config.js
 │
@@ -270,6 +320,8 @@ climate-energy-assistant/
 │
 ├── notebooks/
 ├── screenshots/
+├── Dockerfile.backend
+├── docker-compose.yml
 ├── requirements.txt
 └── README.md
 ```
@@ -344,42 +396,34 @@ Compare Greece and Germany emissions and explain what this means
 ## Clone the Repository
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/climate-energy-assistant.git
-cd climate-energy-assistant
+git clone https://github.com/dimitrisl99/climate-energy-hybrid-assistant.git
+cd climate-energy-hybrid-assistant
 ```
 
 ---
 
-## Backend Setup
+## Run with Docker
 
-Install Python dependencies:
-
-```bash
-pip install -r requirements.txt
-```
-
-Run the FastAPI backend:
+Make sure Docker Desktop is running.
 
 ```bash
-uvicorn src.api.main:app --reload
+docker compose up --build
 ```
 
 ---
 
-## Frontend Setup
+# 🌐 Application URLs
 
-```bash
-cd frontend
-npm install
-npm run dev
+## Frontend
+
+```text
+http://localhost:5173
 ```
 
----
+## Backend API Docs
 
-## Run Ollama
-
-```bash
-ollama run qwen2.5:7b-instruct
+```text
+http://localhost:8000/docs
 ```
 
 ---
@@ -388,21 +432,37 @@ ollama run qwen2.5:7b-instruct
 
 ![Frontend REACT.png](screenshots/Frontend%20REACT.png)
 
+![Answer.png](screenshots/Answer.png)
 
 ---
 
 # 🔮 Future Improvements
 
-- Streaming responses
-- Citation-aware highlighted UI
+- Clickable PDF citations
 - Advanced semantic chunking
 - Tool calling / agents
 - Text-to-SQL experimentation
 - Multi-document conversational RAG memory
-- Docker deployment
-- Observability & logging
-- Production API serving
+- Authentication system
+- Persistent chat history
+- Observability & tracing
+- Kubernetes deployment
+- Production monitoring
+- Cloud deployment pipelines
 
+---
+
+# 🎯 Project Goals
+
+This project was designed to demonstrate:
+
+- production-style AI architecture
+- hybrid retrieval systems
+- enterprise RAG pipelines
+- conversational AI engineering
+- local LLM deployment
+- modern frontend/backend integration
+- Dockerized AI application deployment
 
 ---
 
