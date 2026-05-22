@@ -185,6 +185,13 @@ function App() {
       setLoading(false);
     }
 
+
+   function startNewChat() {
+       setMessages([]);
+      setQuestion("");
+      setLoading(false);
+    }
+
   function handleSubmit(e) {
     e.preventDefault();
     sendQuestion(question);
@@ -213,6 +220,14 @@ function App() {
             {messages.length} messages
           </span>
         </div>
+
+        <button
+          type="button"
+          className="new-chat-btn"
+          onClick={startNewChat}
+        >
+          + New Chat
+        </button>
 
         <div className="examples-section">
           <h3>Example questions</h3>

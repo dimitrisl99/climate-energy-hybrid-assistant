@@ -800,3 +800,22 @@ body {
   transform: translateY(-1px);
 }
 
+.new-chat-btn {
+  width: 100%;
+  margin-top: 14px;
+  border: 1px solid var(--border);
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: white;
+  border-radius: 14px;
+  padding: 12px 14px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: 0.18s ease;
+}
+
+.new-chat-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 28px rgba(37, 99, 235, 0.22);
+}
+
