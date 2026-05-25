@@ -56,6 +56,14 @@ function parseSources(sourceText) {
     });
 }
 
+function buildPdfUrl(source) {
+  if (!source?.path || source.page === "N/A") return null;
+
+  const filename = source.path.split("\\").pop().split("/").pop();
+
+  return `http://localhost:8000/files/${encodeURIComponent(filename)}#page=${source.page}`;
+}
+
 function App() {
   const [question, setQuestion] = useState("");
   const [messages, setMessages] = useState([]);
@@ -311,6 +319,18 @@ function App() {
                                 {source.path}
                               </div>
                             )}
+
+                            {buildPdfUrl(source) && (
+                              <a
+                                className="open-pdf-link"
+                                href={buildPdfUrl(source)}
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                Open PDF
+                              </a>
+                            )}
+
                           </div>
                         </div>
                       )

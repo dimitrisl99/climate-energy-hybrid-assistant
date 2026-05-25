@@ -502,3 +502,21 @@ body {
     max-width: 100%;
   }
 }
+
+.open-pdf-link {
+  width: fit-content;
+  margin-top: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.14);
+  border: 1px solid rgba(147, 197, 253, 0.25);
+  color: #93c5fd;
+  font-size: 0.74rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.open-pdf-link:hover {
+  background: rgba(37, 99, 235, 0.24);
+  color: #bfdbfe;
+}
