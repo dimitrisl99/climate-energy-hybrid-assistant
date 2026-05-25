@@ -104,6 +104,7 @@ function App() {
         route: null,
         sources: [],
         rewrittenQuery: null,
+        visualData: [],
       };
 
       const historyBeforeNewQuestion = messages;
@@ -160,6 +161,7 @@ function App() {
                   route: event.route,
                   sources: parseSources(event.sources),
                   rewrittenQuery: event.rewritten_query,
+                  visualData: event.visual_data || [],
                 };
 
                 return updated;
@@ -316,6 +318,47 @@ function App() {
                 </div>
               )}
 
+              {msg.visualData?.length > 0 && (
+                  <div className="analytics-panel">
+                    <div className="analytics-title">
+                      Visual Analytics
+                    </div>
+
+                    <div className="analytics-grid">
+                      {msg.visualData.map((item, itemIndex) => (
+                        <div
+                          className="analytics-card"
+                          key={itemIndex}
+                        >
+                          <div className="analytics-country">
+                            {item.country || "Unknown"}
+                          </div>
+
+                          <div className="analytics-metric">
+                            <span>CO₂</span>
+                            <strong>
+                              {item.co2 ?? "N/A"}
+                            </strong>
+                          </div>
+
+                          <div className="analytics-metric">
+                            <span>CO₂ / capita</span>
+                            <strong>
+                              {item.co2_per_capita ?? "N/A"}
+                            </strong>
+                          </div>
+
+                          <div className="analytics-metric">
+                            <span>GHG</span>
+                            <strong>
+                              {item.ghg ?? "N/A"}
+                            </strong>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               {msg.sources?.length > 0 && (
                 <details className="sources-panel">
                   <summary>

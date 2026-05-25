@@ -228,8 +228,7 @@ body {
 .message-content {
   padding: 15px 17px;
   border-radius: 16px;
-  line-height: 1.55;
-  white-space: pre-wrap;
+  line-height: 1.45;
   font-size: 0.88rem;
   text-align: left;
 }
@@ -542,4 +541,75 @@ body {
 .citation-link:hover {
   background: rgba(37, 99, 235, 0.32);
   color: #bfdbfe;
+}
+
+.analytics-panel {
+  width: 100%;
+  max-width: 760px;
+  margin-top: 12px;
+  padding: 14px;
+  border-radius: 16px;
+  background: #0f172a;
+  border: 1px solid var(--border);
+}
+
+.analytics-title {
+  margin-bottom: 12px;
+  color: #bfdbfe;
+  font-size: 0.85rem;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.analytics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+}
+
+.analytics-card {
+  padding: 13px;
+  border-radius: 14px;
+  background: #111827;
+  border: 1px solid var(--border);
+}
+
+.analytics-country {
+  margin-bottom: 10px;
+  color: #f8fafc;
+  font-size: 0.92rem;
+  font-weight: 850;
+}
+
+.analytics-metric {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 0;
+  border-top: 1px solid rgba(148, 163, 184, 0.14);
+}
+
+.analytics-metric span {
+  color: #94a3b8;
+  font-size: 0.75rem;
+}
+
+.analytics-metric strong {
+  color: #dbeafe;
+  font-size: 0.78rem;
+}
+
+.message-content p {
+  margin: 0 0 8px;
+}
+
+.message-content ul,
+.message-content ol {
+  margin: 8px 0;
+  padding-left: 20px;
+}
+
+.message-content li {
+  margin: 3px 0;
 }

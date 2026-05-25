@@ -107,6 +107,12 @@ def run_assistant(user_query: str, chat_history: list[dict] | None = None):
     if route == "structured":
         structured_result = route_structured_query(rewritten_query)
 
+        print("\nSTRUCTURED RESULT TYPE:")
+        print(type(structured_result))
+
+        print("\nSTRUCTURED RESULT:")
+        print(structured_result)
+
         answer = generate_structured_answer(
             rewritten_query,
             structured_result,
@@ -133,6 +139,12 @@ def run_assistant(user_query: str, chat_history: list[dict] | None = None):
 
     if route == "hybrid":
         structured_result = route_structured_query(rewritten_query)
+
+        print("\nHYBRID STRUCTURED RESULT TYPE:")
+        print(type(structured_result))
+
+        print("\nHYBRID STRUCTURED RESULT:")
+        print(structured_result)
 
         hybrid_response = answer_with_hybrid(
             rewritten_query,
