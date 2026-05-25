@@ -129,6 +129,7 @@ def ask_question(request: QuestionRequest):
         "rewritten_query": result.get("rewritten_query"),
         "answer": result.get("answer"),
         "sources": result.get("sources"),
+        "visual_data": result.get("visual_data", []),
         "metadata": {
             "backend": "FastAPI",
             "assistant": "Climate Energy Hybrid Assistant",
@@ -165,6 +166,7 @@ def ask_question_stream(request: QuestionRequest):
             "router_reason": result.get("router_reason"),
             "rewritten_query": result.get("rewritten_query"),
             "sources": sources,
+            "visual_data": result.get("visual_data", []),
         }
 
         yield json.dumps(metadata) + "\n"

@@ -7,6 +7,49 @@ from src.generation.structured_answer_generator import generate_structured_answe
 
 from src.rag.rag_answerer import answer_with_rag
 
+def build_visual_data(structured_result):
+    if structured_result is None:
+        return []
+
+    rows = []
+
+    if isinstance(structured_result, list):
+        rows = structured_result
+
+    elif isinstance(structured_result, dict):
+        for key in ["results", "data", "rows", "records"]:
+            value = structured_result.get(key)
+
+            if value is None:
+                continue
+
+            if hasattr(value, "to_dict"):
+                rows = value.to_dict(orient="records")
+            elif isinstance(value, list):
+                rows = value
+            elif isinstance(value, dict):
+                rows = [value]
+
+            break
+
+    elif hasattr(structured_result, "to_dict"):
+        rows = structured_result.to_dict(orient="records")
+
+    visual_data = []
+
+    for row in rows[:6]:
+        if not isinstance(row, dict):
+            continue
+
+        visual_data.append({
+            "country": row.get("country") or row.get("Country"),
+            "co2": row.get("co2") or row.get("co2_emissions") or row.get("CO2"),
+            "co2_per_capita": row.get("co2_per_capita") or row.get("CO2 per capita"),
+            "ghg": row.get("ghg") or row.get("ghg_emissions") or row.get("GHG"),
+        })
+
+    return visual_data
+
 
 def build_conversation_context(chat_history: list[dict], max_turns: int = 4) -> str:
     recent_messages = chat_history[-max_turns:]
@@ -75,6 +118,7 @@ def run_assistant(user_query: str, chat_history: list[dict] | None = None):
             "rewritten_query": rewritten_query,
             "answer": answer,
             "raw_result": structured_result,
+            "visual_data": build_visual_data(structured_result),
         }
 
     if route == "rag":
@@ -103,6 +147,7 @@ def run_assistant(user_query: str, chat_history: list[dict] | None = None):
             "answer": hybrid_response["answer"],
             "sources": hybrid_response["sources"],
             "raw_result": structured_result,
+            "visual_data": build_visual_data(structured_result),
         }
 
     rag_answer = answer_with_rag(rewritten_query)
