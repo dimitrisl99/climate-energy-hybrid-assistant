@@ -8,11 +8,18 @@ from src.app.hybrid_assistant import run_assistant
 import json
 import time
 from fastapi.responses import StreamingResponse
+from fastapi.staticfiles import StaticFiles
 
 
 app = FastAPI(
     title="Climate Energy Assistant API",
     version="1.0.0",
+)
+
+app.mount(
+    "/files",
+    StaticFiles(directory="data/raw/pdfs"),
+    name="files",
 )
 
 app.add_middleware(

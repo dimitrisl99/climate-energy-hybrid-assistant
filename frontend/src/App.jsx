@@ -64,6 +64,19 @@ function buildPdfUrl(source) {
   return `http://localhost:8000/files/${encodeURIComponent(filename)}#page=${source.page}`;
 }
 
+function linkifyCitations(content, sources) {
+  if (!content || !sources?.length) return content;
+
+  return content.replace(/\[(\d+)\]/g, (match, number) => {
+    const source = sources[Number(number) - 1];
+    const url = buildPdfUrl(source);
+
+    if (!url) return match;
+
+    return `[${match}](${url})`;
+  });
+}
+
 function App() {
   const [question, setQuestion] = useState("");
   const [messages, setMessages] = useState([]);
@@ -277,8 +290,23 @@ function App() {
               className={`message ${msg.role}`}
             >
               <div className="message-content">
-                <ReactMarkdown>
-                  {msg.content}
+                <ReactMarkdown
+                  components={{
+                    a: ({ href, children }) => (
+                      <a
+                        href={href}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="citation-link"
+                      >
+                        {children}
+                      </a>
+                    ),
+                  }}
+                >
+                  {msg.role === "assistant"
+                    ? linkifyCitations(msg.content, msg.sources)
+                    : msg.content}
                 </ReactMarkdown>
               </div>
 
