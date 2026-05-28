@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from "react";
-import ReactMarkdown from "react-markdown";
 import "./styles.css";
+import { useState } from "react";
+
 import {
   BarChart,
   Bar,
@@ -11,464 +11,317 @@ import {
   CartesianGrid,
 } from "recharts";
 
-
-const API_URL = "http://localhost:8000/ask/stream";
-
-const exampleQuestions = [
-  "Compare Greece Germany France",
-  "What are the main climate risks in Europe?",
-  "What are the EU climate neutrality targets?",
-  "Compare Greece and Germany emissions and explain what this means.",
-];
-
-function splitAnswerAndSources(answer, apiSources) {
-  if (apiSources) {
-    return {
-      cleanAnswer: answer,
-      sourceText: apiSources,
-    };
-  }
-
-  if (!answer?.includes("Sources:")) {
-    return {
-      cleanAnswer: answer,
-      sourceText: "",
-    };
-  }
-
-  const [cleanAnswer, sourceText] = answer.split("Sources:");
-
-  return {
-    cleanAnswer: cleanAnswer.trim(),
-    sourceText: sourceText.trim(),
-  };
-}
-
-function parseSources(sourceText) {
-  if (!sourceText) return [];
-
-  return sourceText
-    .split("\n")
-    .filter((line) => line.trim())
-    .map((line) => {
-      const pageMatch = line.match(/page\s+(\d+)/i);
-      const page = pageMatch ? pageMatch[1] : "N/A";
-
-      const cleaned = line.replace(/^\[\d+\]\s*/, "").trim();
-      const parts = cleaned.split("—").map((part) => part.trim());
-
-      return {
-        title: parts[0] || "Unknown source",
-        page,
-        path: parts[2] || parts[1] || "",
-        raw: cleaned,
-      };
-    });
-}
-
-function buildPdfUrl(source) {
-  if (!source?.path || source.page === "N/A") return null;
-
-  const filename = source.path.split("\\").pop().split("/").pop();
-
-  return `http://localhost:8000/files/${encodeURIComponent(filename)}#page=${source.page}`;
-}
-
-function linkifyCitations(content, sources) {
-  if (!content || !sources?.length) return content;
-
-  return content.replace(/\[(\d+)\]/g, (match, number) => {
-    const source = sources[Number(number) - 1];
-    const url = buildPdfUrl(source);
-
-    if (!url) return match;
-
-    return `[${match}](${url})`;
-  });
-}
-
 function App() {
   const [question, setQuestion] = useState("");
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const messagesEndRef = useRef(null);
+  const askQuestion = async (customQuestion = null) => {
+    const finalQuestion = customQuestion || question;
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({
-      behavior: "smooth",
-    });
-  }, [messages, loading]);
+    if (!finalQuestion.trim()) return;
 
-    async function sendQuestion(text) {
-      if (!text.trim()) return;
+    const userMessage = {
+      role: "user",
+      content: finalQuestion,
+    };
 
-      const userMessage = {
-        role: "user",
-        content: text,
-      };
+    setMessages((prev) => [...prev, userMessage]);
 
-      const assistantMessage = {
-        role: "assistant",
-        content: "",
-        route: null,
-        sources: [],
-        rewrittenQuery: null,
-        visualData: [],
-      };
+    setQuestion("");
+    setLoading(true);
 
-      const historyBeforeNewQuestion = messages;
-
-      setMessages((prev) => [
-        ...prev,
-        userMessage,
-        assistantMessage,
-      ]);
-
-      setQuestion("");
-      setLoading(true);
-
-      try {
-        const response = await fetch(API_URL, {
+    try {
+      const response = await fetch(
+        "http://localhost:8000/ask/stream",
+        {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            question: text,
-            chat_history: historyBeforeNewQuestion,
+            question: finalQuestion,
+            chat_history: messages,
           }),
-        });
+        }
+      );
 
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder("utf-8");
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
 
-        let buffer = "";
-        let streamedAnswer = "";
+      let assistantMessage = {
+        role: "assistant",
+        content: "",
+        route: "",
+        sources: "",
+        rewrittenQuery: "",
+        visualData: [],
+      };
 
-        while (true) {
-          const { value, done } = await reader.read();
+      setMessages((prev) => [...prev, assistantMessage]);
 
-          if (done) break;
+      while (true) {
+        const { done, value } = await reader.read();
 
-          buffer += decoder.decode(value, { stream: true });
+        if (done) break;
 
-          const lines = buffer.split("\n");
-          buffer = lines.pop();
+        const chunk = decoder.decode(value);
+        const lines = chunk.split("\n").filter(Boolean);
 
-          for (const line of lines) {
-            if (!line.trim()) continue;
+        for (const line of lines) {
+          const event = JSON.parse(line);
 
-            const event = JSON.parse(line);
+          if (event.type === "metadata") {
+            assistantMessage.route = event.route;
+            assistantMessage.sources = event.sources;
+            assistantMessage.rewrittenQuery =
+              event.rewritten_query;
+            assistantMessage.visualData =
+              event.visual_data || [];
 
-            if (event.type === "metadata") {
-              setMessages((prev) => {
-                const updated = [...prev];
-                const lastIndex = updated.length - 1;
+            setMessages((prev) => {
+              const updated = [...prev];
+              updated[updated.length - 1] = {
+                ...assistantMessage,
+              };
+              return updated;
+            });
+          }
 
-                updated[lastIndex] = {
-                  ...updated[lastIndex],
-                  route: event.route,
-                  sources: parseSources(event.sources),
-                  rewrittenQuery: event.rewritten_query,
-                  visualData: event.visual_data || [],
-                };
+          if (event.type === "token") {
+            assistantMessage.content += event.content;
 
-                return updated;
-              });
-            }
-
-            if (event.type === "token") {
-              streamedAnswer += event.content;
-
-              setMessages((prev) => {
-                const updated = [...prev];
-                const lastIndex = updated.length - 1;
-
-                updated[lastIndex] = {
-                  ...updated[lastIndex],
-                  content: streamedAnswer,
-                };
-
-                return updated;
-              });
-            }
-
-            if (event.type === "done") {
-              setLoading(false);
-            }
+            setMessages((prev) => {
+              const updated = [...prev];
+              updated[updated.length - 1] = {
+                ...assistantMessage,
+              };
+              return updated;
+            });
           }
         }
-      } catch (error) {
-        console.error(error);
-
-        setMessages((prev) => {
-          const updated = [...prev];
-          const lastIndex = updated.length - 1;
-
-          updated[lastIndex] = {
-            role: "assistant",
-            content: "Something went wrong.",
-          };
-
-          return updated;
-        });
       }
+    } catch (error) {
+      console.error(error);
 
-      setLoading(false);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: "Something went wrong.",
+        },
+      ]);
     }
 
+    setLoading(false);
+  };
 
-   function startNewChat() {
-       setMessages([]);
-      setQuestion("");
-      setLoading(false);
-    }
-
-  function handleSubmit(e) {
-    e.preventDefault();
-    sendQuestion(question);
-  }
+  const exampleQuestions = [
+    "Compare Greece Germany France",
+    "What are the main climate risks in Europe?",
+    "What are the EU climate neutrality targets?",
+    "Compare Greece and Germany emissions and explain what this means.",
+  ];
 
   return (
     <div className="app">
-      <div className="sidebar">
-        <h2>🌍 Climate Assistant</h2>
+      <aside className="sidebar">
+        <div className="sidebar-header">
+          🌍 Climate Assistant
+        </div>
 
-        <p>
-          Hybrid AI assistant using:
-        </p>
+        <div className="sidebar-section">
+          <div className="sidebar-title">
+            Hybrid AI assistant using:
+          </div>
 
-        <ul>
-          <li>Structured Analytics</li>
-          <li>RAG</li>
-          <li>Hybrid Routing</li>
-          <li>FastAPI Backend</li>
-          <li>Local Qwen LLM</li>
-        </ul>
+          <ul className="feature-list">
+            <li>Structured Analytics</li>
+            <li>RAG</li>
+            <li>Hybrid Routing</li>
+            <li>FastAPI Backend</li>
+            <li>Local Qwen LLM</li>
+          </ul>
+        </div>
 
         <div className="memory-box">
-          <strong>Memory</strong>
-          <span>
+          <div className="memory-title">Memory</div>
+          <div className="memory-count">
             {messages.length} messages
-          </span>
+          </div>
         </div>
 
         <button
-          type="button"
-          className="new-chat-btn"
-          onClick={startNewChat}
+          className="new-chat-button"
+          onClick={() => setMessages([])}
         >
           + New Chat
         </button>
 
-        <div className="examples-section">
-          <h3>Example questions</h3>
+        <div className="sidebar-section">
+          <div className="sidebar-title">
+            Example questions
+          </div>
 
-          {exampleQuestions.map((example, index) => (
-            <button
-              key={index}
-              className="example-btn"
-              onClick={() => sendQuestion(example)}
-            >
-              {example}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="chat-container">
-        <div className="hero-card">
-          <div className="hero-content">
-            <span className="hero-label">
-              Enterprise AI Assistant
-            </span>
-
-            <h1>
-              Climate Energy Hybrid Assistant
-            </h1>
-
-            <p>
-              Enterprise-style AI assistant
-              for climate and energy intelligence
-            </p>
+          <div className="examples">
+            {exampleQuestions.map((q) => (
+              <button
+                key={q}
+                className="example-button"
+                onClick={() => askQuestion(q)}
+              >
+                {q}
+              </button>
+            ))}
           </div>
         </div>
+      </aside>
 
-        <div className="messages">
+      <main className="main">
+        <div className="hero">
+          <div className="hero-badge">
+            Enterprise AI Assistant
+          </div>
+
+          <h1>
+            Climate Energy Hybrid Assistant
+          </h1>
+
+          <p>
+            Enterprise-style AI assistant for climate
+            and energy intelligence
+          </p>
+        </div>
+
+        <div className="chat-container">
           {messages.map((msg, index) => (
             <div
               key={index}
               className={`message ${msg.role}`}
             >
-              <div className="message-content">
-                <ReactMarkdown
-                  components={{
-                    a: ({ href, children }) => (
-                      <a
-                        href={href}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="citation-link"
-                      >
-                        {children}
-                      </a>
-                    ),
-                  }}
-                >
-                  {msg.role === "assistant"
-                    ? linkifyCitations(msg.content, msg.sources)
-                    : msg.content}
-                </ReactMarkdown>
+              <div className="message-bubble">
+                <div className="message-content">
+                  {msg.content}
+                </div>
               </div>
 
-              {msg.route && (
-                <div className="route-badge">
-                  {msg.route}
-                </div>
-              )}
+              {msg.role === "assistant" && (
+                <>
+                  {msg.route && (
+                    <div className="route-badge">
+                      {msg.route.toUpperCase()}
+                    </div>
+                  )}
 
-              {msg.visualData?.length > 0 && (
-                  <div className="analytics-panel">
-                      <div className="chart-section">
-                          <div className="chart-title">
-                            CO₂ emissions comparison
-                          </div>
-
-                          <div className="chart-box">
-                            <ResponsiveContainer width="100%" height={260}>
-                              <BarChart data={msg.visualData}>
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey="country" />
-                                <YAxis />
-                                <Tooltip />
-                                <Bar dataKey="co2" name="CO₂ emissions" />
-                              </BarChart>
-                            </ResponsiveContainer>
-                          </div>
+                  {msg.visualData?.length > 0 && (
+                    <div className="analytics-panel">
+                      <div className="analytics-title">
+                        Visual Analytics
                       </div>
-                    <div className="analytics-title">
-                      Visual Analytics
-                    </div>
 
-                    <div className="analytics-grid">
-                      {msg.visualData.map((item, itemIndex) => (
-                        <div
-                          className="analytics-card"
-                          key={itemIndex}
-                        >
-                          <div className="analytics-country">
-                            {item.country || "Unknown"}
-                          </div>
-
-                          <div className="analytics-metric">
-                            <span>CO₂</span>
-                            <strong>
-                              {item.co2 ?? "N/A"}
-                            </strong>
-                          </div>
-
-                          <div className="analytics-metric">
-                            <span>CO₂ / capita</span>
-                            <strong>
-                              {item.co2_per_capita ?? "N/A"}
-                            </strong>
-                          </div>
-
-                          <div className="analytics-metric">
-                            <span>GHG</span>
-                            <strong>
-                              {item.ghg ?? "N/A"}
-                            </strong>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              {msg.sources?.length > 0 && (
-                <details className="sources-panel">
-                  <summary>
-                    View sources
-                  </summary>
-
-                  <div className="sources-list">
-                    {msg.sources.map(
-                      (source, sourceIndex) => (
-                        <div
-                          className="source-card"
-                          key={sourceIndex}
-                        >
-                          <div className="source-icon">
-                            📄
-                          </div>
-
-                          <div className="source-info">
-                            <div className="source-title">
-                              {source.title}
+                      <div className="analytics-grid">
+                        {msg.visualData.map((item) => (
+                          <div
+                            key={item.country}
+                            className="analytics-card"
+                          >
+                            <div className="analytics-country">
+                              {item.country}
                             </div>
 
-                            <div className="source-meta">
-                              Page {source.page}
+                            <div className="analytics-row">
+                              <span>CO₂</span>
+                              <strong>
+                                {item.co2 ?? "N/A"}
+                              </strong>
                             </div>
 
-                            {source.path && (
-                              <div className="source-path">
-                                {source.path}
-                              </div>
-                            )}
+                            <div className="analytics-row">
+                              <span>CO₂ / capita</span>
+                              <strong>
+                                {item.co2_per_capita ??
+                                  "N/A"}
+                              </strong>
+                            </div>
 
-                            {buildPdfUrl(source) && (
-                              <a
-                                className="open-pdf-link"
-                                href={buildPdfUrl(source)}
-                                target="_blank"
-                                rel="noreferrer"
-                              >
-                                Open PDF
-                              </a>
-                            )}
-
+                            <div className="analytics-row">
+                              <span>GHG</span>
+                              <strong>
+                                {item.ghg ?? "N/A"}
+                              </strong>
+                            </div>
                           </div>
+                        ))}
+                      </div>
+
+                      <div className="chart-section">
+                        <div className="chart-title">
+                          CO₂ emissions comparison
                         </div>
-                      )
-                    )}
-                  </div>
-                </details>
-              )}
 
-              {msg.rewrittenQuery && (
-                <details className="sources-panel">
-                  <summary>
-                    Rewritten query
-                  </summary>
+                        <div className="chart-box">
+                          <ResponsiveContainer
+                            width="100%"
+                            height={260}
+                          >
+                            <BarChart
+                              data={msg.visualData}
+                            >
+                              <CartesianGrid strokeDasharray="3 3" />
 
-                  <div className="sources-content">
-                    {msg.rewrittenQuery}
-                  </div>
-                </details>
+                              <XAxis dataKey="country" />
+
+                              <YAxis />
+
+                              <Tooltip />
+
+                              <Bar
+                                dataKey="co2"
+                                name="CO₂ emissions"
+                                fill="#2563eb"
+                                radius={[8, 8, 0, 0]}
+                              />
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {msg.sources && (
+                    <details className="sources-box">
+                      <summary>
+                        View sources
+                      </summary>
+
+                      <pre>{msg.sources}</pre>
+                    </details>
+                  )}
+
+                  {msg.rewrittenQuery && (
+                    <details className="rewrite-box">
+                      <summary>
+                        Rewritten query
+                      </summary>
+
+                      <div>
+                        {msg.rewrittenQuery}
+                      </div>
+                    </details>
+                  )}
+                </>
               )}
             </div>
           ))}
 
           {loading && (
-            <div className="loading-card">
-              <div className="loader-dot"></div>
-
-              <span>
-                Routing query, retrieving
-                context, and generating answer...
-              </span>
+            <div className="loading">
+              Thinking...
             </div>
           )}
-
-          <div ref={messagesEndRef} />
         </div>
 
-        <form
-          className="input-form"
-          onSubmit={handleSubmit}
-        >
+        <div className="input-container">
           <input
             type="text"
             placeholder="Ask something..."
@@ -476,13 +329,18 @@ function App() {
             onChange={(e) =>
               setQuestion(e.target.value)
             }
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                askQuestion();
+              }
+            }}
           />
 
-          <button type="submit">
+          <button onClick={() => askQuestion()}>
             Send
           </button>
-        </form>
-      </div>
+        </div>
+      </main>
     </div>
   );
 }
