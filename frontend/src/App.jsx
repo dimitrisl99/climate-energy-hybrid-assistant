@@ -1,6 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import "./styles.css";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+} from "recharts";
+
 
 const API_URL = "http://localhost:8000/ask/stream";
 
@@ -320,6 +330,23 @@ function App() {
 
               {msg.visualData?.length > 0 && (
                   <div className="analytics-panel">
+                      <div className="chart-section">
+                          <div className="chart-title">
+                            CO₂ emissions comparison
+                          </div>
+
+                          <div className="chart-box">
+                            <ResponsiveContainer width="100%" height={260}>
+                              <BarChart data={msg.visualData}>
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis dataKey="country" />
+                                <YAxis />
+                                <Tooltip />
+                                <Bar dataKey="co2" name="CO₂ emissions" />
+                              </BarChart>
+                            </ResponsiveContainer>
+                          </div>
+                      </div>
                     <div className="analytics-title">
                       Visual Analytics
                     </div>

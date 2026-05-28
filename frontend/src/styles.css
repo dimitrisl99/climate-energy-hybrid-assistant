@@ -613,3 +613,24 @@ body {
 .message-content li {
   margin: 3px 0;
 }
+
+.chart-section {
+  margin-top: 16px;
+}
+
+.chart-title {
+  margin-bottom: 10px;
+  color: #bfdbfe;
+  font-size: 0.82rem;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.chart-box {
+  width: 100%;
+  height: 280px;
+  padding: 12px;
+  border-radius: 14px;
+  background: #111827;
+  border: 1px solid var(--border);
