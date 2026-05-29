@@ -167,6 +167,7 @@ def ask_question_stream(request: QuestionRequest):
             "rewritten_query": result.get("rewritten_query"),
             "sources": sources,
             "visual_data": result.get("visual_data", []),
+            "chart_type": result.get("chart_type", "bar"),
         }
 
         yield json.dumps(metadata) + "\n"

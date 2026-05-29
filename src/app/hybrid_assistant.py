@@ -51,6 +51,24 @@ def build_visual_data(structured_result):
     return visual_data
 
 
+def detect_chart_type(query: str):
+    query = query.lower()
+
+    trend_keywords = [
+        "trend",
+        "over time",
+        "history",
+        "historical",
+        "evolution",
+        "change over time",
+        "over the years",
+    ]
+
+    if any(keyword in query for keyword in trend_keywords):
+        return "line"
+
+    return "bar"
+
 def build_conversation_context(chat_history: list[dict], max_turns: int = 4) -> str:
     recent_messages = chat_history[-max_turns:]
     context_lines = []
@@ -125,6 +143,7 @@ def run_assistant(user_query: str, chat_history: list[dict] | None = None):
             "answer": answer,
             "raw_result": structured_result,
             "visual_data": build_visual_data(structured_result),
+            "chart_type": detect_chart_type(rewritten_query),
         }
 
     if route == "rag":
@@ -160,6 +179,7 @@ def run_assistant(user_query: str, chat_history: list[dict] | None = None):
             "sources": hybrid_response["sources"],
             "raw_result": structured_result,
             "visual_data": build_visual_data(structured_result),
+            "chart_type": detect_chart_type(rewritten_query),
         }
 
     rag_answer = answer_with_rag(rewritten_query)

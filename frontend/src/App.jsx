@@ -1,9 +1,12 @@
+import { useEffect, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
 import "./styles.css";
-import { useState } from "react";
 
 import {
   BarChart,
   Bar,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   Tooltip,
@@ -11,336 +14,467 @@ import {
   CartesianGrid,
 } from "recharts";
 
+const API_URL = "http://localhost:8000/ask/stream";
+
+const exampleQuestions = [
+  "Compare Greece Germany France",
+  "Greece CO2 emissions over time",
+  "What are the main climate risks in Europe?",
+  "What are the EU climate neutrality targets?",
+  "Compare Greece and Germany emissions and explain what this means.",
+];
+
+function parseSources(sourceText) {
+  if (!sourceText) return [];
+
+  return sourceText
+    .split("\n")
+    .filter((line) => line.trim())
+    .map((line) => {
+      const pageMatch = line.match(/page\s+(\d+)/i);
+      const page = pageMatch ? pageMatch[1] : "N/A";
+
+      const cleaned = line.replace(/^\[\d+\]\s*/, "").trim();
+      const parts = cleaned.split("—").map((part) => part.trim());
+
+      return {
+        title: parts[0] || "Unknown source",
+        page,
+        path: parts[2] || parts[1] || "",
+        raw: cleaned,
+      };
+    });
+}
+
+function buildPdfUrl(source) {
+  if (!source?.path || source.page === "N/A") return null;
+
+  const filename = source.path.split("\\").pop().split("/").pop();
+
+  return `http://localhost:8000/files/${encodeURIComponent(filename)}#page=${source.page}`;
+}
+
+function linkifyCitations(content, sources) {
+  if (!content || !sources?.length) return content;
+
+  return content.replace(/\[(\d+)\]/g, (match, number) => {
+    const source = sources[Number(number) - 1];
+    const url = buildPdfUrl(source);
+
+    if (!url) return match;
+
+    return `[${match}](${url})`;
+  });
+}
+
 function App() {
   const [question, setQuestion] = useState("");
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const askQuestion = async (customQuestion = null) => {
-    const finalQuestion = customQuestion || question;
+  const messagesEndRef = useRef(null);
 
-    if (!finalQuestion.trim()) return;
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({
+      behavior: "smooth",
+    });
+  }, [messages, loading]);
+
+  async function sendQuestion(text) {
+    if (!text.trim()) return;
 
     const userMessage = {
       role: "user",
-      content: finalQuestion,
+      content: text,
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    const assistantMessage = {
+      role: "assistant",
+      content: "",
+      route: null,
+      sources: [],
+      rewrittenQuery: null,
+      visualData: [],
+      chartType: "bar",
+    };
+
+    const historyBeforeNewQuestion = messages;
+
+    setMessages((prev) => [
+      ...prev,
+      userMessage,
+      assistantMessage,
+    ]);
 
     setQuestion("");
     setLoading(true);
 
     try {
-      const response = await fetch(
-        "http://localhost:8000/ask/stream",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            question: finalQuestion,
-            chat_history: messages,
-          }),
-        }
-      );
+      const response = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          question: text,
+          chat_history: historyBeforeNewQuestion,
+        }),
+      });
 
       const reader = response.body.getReader();
-      const decoder = new TextDecoder();
+      const decoder = new TextDecoder("utf-8");
 
-      let assistantMessage = {
-        role: "assistant",
-        content: "",
-        route: "",
-        sources: "",
-        rewrittenQuery: "",
-        visualData: [],
-      };
-
-      setMessages((prev) => [...prev, assistantMessage]);
+      let buffer = "";
+      let streamedAnswer = "";
 
       while (true) {
-        const { done, value } = await reader.read();
+        const { value, done } = await reader.read();
 
         if (done) break;
 
-        const chunk = decoder.decode(value);
-        const lines = chunk.split("\n").filter(Boolean);
+        buffer += decoder.decode(value, {
+          stream: true,
+        });
+
+        const lines = buffer.split("\n");
+        buffer = lines.pop();
 
         for (const line of lines) {
+          if (!line.trim()) continue;
+
           const event = JSON.parse(line);
 
           if (event.type === "metadata") {
-            assistantMessage.route = event.route;
-            assistantMessage.sources = event.sources;
-            assistantMessage.rewrittenQuery =
-              event.rewritten_query;
-            assistantMessage.visualData =
-              event.visual_data || [];
-
             setMessages((prev) => {
               const updated = [...prev];
-              updated[updated.length - 1] = {
-                ...assistantMessage,
+              const lastIndex = updated.length - 1;
+
+              updated[lastIndex] = {
+                ...updated[lastIndex],
+                route: event.route,
+                sources: parseSources(event.sources),
+                rewrittenQuery: event.rewritten_query,
+                visualData: event.visual_data || [],
+                chartType: event.chart_type || "bar",
               };
+
               return updated;
             });
           }
 
           if (event.type === "token") {
-            assistantMessage.content += event.content;
+            streamedAnswer += event.content;
 
             setMessages((prev) => {
               const updated = [...prev];
-              updated[updated.length - 1] = {
-                ...assistantMessage,
+              const lastIndex = updated.length - 1;
+
+              updated[lastIndex] = {
+                ...updated[lastIndex],
+                content: streamedAnswer,
               };
+
               return updated;
             });
+          }
+
+          if (event.type === "done") {
+            setLoading(false);
           }
         }
       }
     } catch (error) {
       console.error(error);
 
-      setMessages((prev) => [
-        ...prev,
-        {
+      setMessages((prev) => {
+        const updated = [...prev];
+        const lastIndex = updated.length - 1;
+
+        updated[lastIndex] = {
           role: "assistant",
           content: "Something went wrong.",
-        },
-      ]);
+          sources: [],
+          visualData: [],
+          chartType: "bar",
+        };
+
+        return updated;
+      });
     }
 
     setLoading(false);
-  };
+  }
 
-  const exampleQuestions = [
-    "Compare Greece Germany France",
-    "What are the main climate risks in Europe?",
-    "What are the EU climate neutrality targets?",
-    "Compare Greece and Germany emissions and explain what this means.",
-  ];
+  function startNewChat() {
+    setMessages([]);
+    setQuestion("");
+    setLoading(false);
+  }
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    sendQuestion(question);
+  }
 
   return (
     <div className="app">
-      <aside className="sidebar">
-        <div className="sidebar-header">
-          🌍 Climate Assistant
-        </div>
+      <div className="sidebar">
+        <h2>🌍 Climate Assistant</h2>
 
-        <div className="sidebar-section">
-          <div className="sidebar-title">
-            Hybrid AI assistant using:
-          </div>
+        <p>Hybrid AI assistant using:</p>
 
-          <ul className="feature-list">
-            <li>Structured Analytics</li>
-            <li>RAG</li>
-            <li>Hybrid Routing</li>
-            <li>FastAPI Backend</li>
-            <li>Local Qwen LLM</li>
-          </ul>
-        </div>
+        <ul>
+          <li>Structured Analytics</li>
+          <li>RAG</li>
+          <li>Hybrid Routing</li>
+          <li>FastAPI Backend</li>
+          <li>Local Qwen LLM</li>
+        </ul>
 
         <div className="memory-box">
-          <div className="memory-title">Memory</div>
-          <div className="memory-count">
-            {messages.length} messages
-          </div>
+          <strong>Memory</strong>
+          <span>{messages.length} messages</span>
         </div>
 
         <button
-          className="new-chat-button"
-          onClick={() => setMessages([])}
+          type="button"
+          className="new-chat-btn"
+          onClick={startNewChat}
         >
           + New Chat
         </button>
 
-        <div className="sidebar-section">
-          <div className="sidebar-title">
-            Example questions
-          </div>
+        <div className="examples-section">
+          <h3>Example questions</h3>
 
-          <div className="examples">
-            {exampleQuestions.map((q) => (
-              <button
-                key={q}
-                className="example-button"
-                onClick={() => askQuestion(q)}
-              >
-                {q}
-              </button>
-            ))}
+          {exampleQuestions.map((example, index) => (
+            <button
+              key={index}
+              className="example-btn"
+              onClick={() => sendQuestion(example)}
+            >
+              {example}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="chat-container">
+        <div className="hero-card">
+          <div className="hero-content">
+            <span className="hero-label">
+              Enterprise AI Assistant
+            </span>
+
+            <h1>Climate Energy Hybrid Assistant</h1>
+
+            <p>
+              Enterprise-style AI assistant for climate
+              and energy intelligence
+            </p>
           </div>
         </div>
-      </aside>
 
-      <main className="main">
-        <div className="hero">
-          <div className="hero-badge">
-            Enterprise AI Assistant
-          </div>
-
-          <h1>
-            Climate Energy Hybrid Assistant
-          </h1>
-
-          <p>
-            Enterprise-style AI assistant for climate
-            and energy intelligence
-          </p>
-        </div>
-
-        <div className="chat-container">
+        <div className="messages">
           {messages.map((msg, index) => (
             <div
               key={index}
               className={`message ${msg.role}`}
             >
-              <div className="message-bubble">
-                <div className="message-content">
-                  {msg.content}
-                </div>
+              <div className="message-content">
+                <ReactMarkdown
+                  components={{
+                    a: ({ href, children }) => (
+                      <a
+                        href={href}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="citation-link"
+                      >
+                        {children}
+                      </a>
+                    ),
+                  }}
+                >
+                  {msg.role === "assistant"
+                    ? linkifyCitations(msg.content, msg.sources)
+                    : msg.content}
+                </ReactMarkdown>
               </div>
 
-              {msg.role === "assistant" && (
-                <>
-                  {msg.route && (
-                    <div className="route-badge">
-                      {msg.route.toUpperCase()}
-                    </div>
-                  )}
+              {msg.route && (
+                <div className="route-badge">
+                  {msg.route}
+                </div>
+              )}
 
-                  {msg.visualData?.length > 0 && (
-                    <div className="analytics-panel">
-                      <div className="analytics-title">
-                        Visual Analytics
+              {msg.visualData?.length > 0 && (
+                <div className="analytics-panel">
+                  <div className="analytics-title">
+                    Visual Analytics
+                  </div>
+
+                  <div className="analytics-grid">
+                    {msg.visualData.map((item, itemIndex) => (
+                      <div
+                        className="analytics-card"
+                        key={itemIndex}
+                      >
+                        <div className="analytics-country">
+                          {item.country || item.year || "Unknown"}
+                        </div>
+
+                        <div className="analytics-metric">
+                          <span>CO₂</span>
+                          <strong>{item.co2 ?? "N/A"}</strong>
+                        </div>
+
+                        <div className="analytics-metric">
+                          <span>CO₂ / capita</span>
+                          <strong>
+                            {item.co2_per_capita ?? "N/A"}
+                          </strong>
+                        </div>
+
+                        <div className="analytics-metric">
+                          <span>GHG</span>
+                          <strong>{item.ghg ?? "N/A"}</strong>
+                        </div>
                       </div>
+                    ))}
+                  </div>
 
-                      <div className="analytics-grid">
-                        {msg.visualData.map((item) => (
-                          <div
-                            key={item.country}
-                            className="analytics-card"
-                          >
-                            <div className="analytics-country">
-                              {item.country}
-                            </div>
+                  <div className="chart-section">
+                    <div className="chart-title">
+                      {msg.chartType === "line"
+                        ? "CO₂ emissions trend"
+                        : "CO₂ emissions comparison"}
+                    </div>
 
-                            <div className="analytics-row">
-                              <span>CO₂</span>
-                              <strong>
-                                {item.co2 ?? "N/A"}
-                              </strong>
-                            </div>
+                    <div className="chart-box">
+                      <ResponsiveContainer
+                        width="100%"
+                        height={260}
+                      >
+                        {msg.chartType === "line" ? (
+                          <LineChart data={msg.visualData}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="year" />
+                            <YAxis />
+                            <Tooltip />
+                            <Line
+                              type="monotone"
+                              dataKey="co2"
+                              name="CO₂ emissions"
+                              stroke="#2563eb"
+                              strokeWidth={3}
+                              dot={{ r: 4 }}
+                              activeDot={{ r: 6 }}
+                            />
+                          </LineChart>
+                        ) : (
+                          <BarChart data={msg.visualData}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="country" />
+                            <YAxis />
+                            <Tooltip />
+                            <Bar
+                              dataKey="co2"
+                              name="CO₂ emissions"
+                              fill="#2563eb"
+                              radius={[8, 8, 0, 0]}
+                            />
+                          </BarChart>
+                        )}
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                </div>
+              )}
 
-                            <div className="analytics-row">
-                              <span>CO₂ / capita</span>
-                              <strong>
-                                {item.co2_per_capita ??
-                                  "N/A"}
-                              </strong>
-                            </div>
+              {msg.sources?.length > 0 && (
+                <details className="sources-panel">
+                  <summary>View sources</summary>
 
-                            <div className="analytics-row">
-                              <span>GHG</span>
-                              <strong>
-                                {item.ghg ?? "N/A"}
-                              </strong>
-                            </div>
+                  <div className="sources-list">
+                    {msg.sources.map((source, sourceIndex) => (
+                      <div
+                        className="source-card"
+                        key={sourceIndex}
+                      >
+                        <div className="source-icon">📄</div>
+
+                        <div className="source-info">
+                          <div className="source-title">
+                            {source.title}
                           </div>
-                        ))}
-                      </div>
 
-                      <div className="chart-section">
-                        <div className="chart-title">
-                          CO₂ emissions comparison
-                        </div>
+                          <div className="source-meta">
+                            Page {source.page}
+                          </div>
 
-                        <div className="chart-box">
-                          <ResponsiveContainer
-                            width="100%"
-                            height={260}
-                          >
-                            <BarChart
-                              data={msg.visualData}
+                          {source.path && (
+                            <div className="source-path">
+                              {source.path}
+                            </div>
+                          )}
+
+                          {buildPdfUrl(source) && (
+                            <a
+                              className="open-pdf-link"
+                              href={buildPdfUrl(source)}
+                              target="_blank"
+                              rel="noreferrer"
                             >
-                              <CartesianGrid strokeDasharray="3 3" />
-
-                              <XAxis dataKey="country" />
-
-                              <YAxis />
-
-                              <Tooltip />
-
-                              <Bar
-                                dataKey="co2"
-                                name="CO₂ emissions"
-                                fill="#2563eb"
-                                radius={[8, 8, 0, 0]}
-                              />
-                            </BarChart>
-                          </ResponsiveContainer>
+                              Open PDF
+                            </a>
+                          )}
                         </div>
                       </div>
-                    </div>
-                  )}
+                    ))}
+                  </div>
+                </details>
+              )}
 
-                  {msg.sources && (
-                    <details className="sources-box">
-                      <summary>
-                        View sources
-                      </summary>
+              {msg.rewrittenQuery && (
+                <details className="sources-panel">
+                  <summary>Rewritten query</summary>
 
-                      <pre>{msg.sources}</pre>
-                    </details>
-                  )}
-
-                  {msg.rewrittenQuery && (
-                    <details className="rewrite-box">
-                      <summary>
-                        Rewritten query
-                      </summary>
-
-                      <div>
-                        {msg.rewrittenQuery}
-                      </div>
-                    </details>
-                  )}
-                </>
+                  <div className="sources-content">
+                    {msg.rewrittenQuery}
+                  </div>
+                </details>
               )}
             </div>
           ))}
 
           {loading && (
-            <div className="loading">
-              Thinking...
+            <div className="loading-card">
+              <div className="loader-dot"></div>
+
+              <span>
+                Routing query, retrieving context, and generating answer...
+              </span>
             </div>
           )}
+
+          <div ref={messagesEndRef} />
         </div>
 
-        <div className="input-container">
+        <form
+          className="input-form"
+          onSubmit={handleSubmit}
+        >
           <input
             type="text"
             placeholder="Ask something..."
             value={question}
-            onChange={(e) =>
-              setQuestion(e.target.value)
-            }
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                askQuestion();
-              }
-            }}
+            onChange={(e) => setQuestion(e.target.value)}
           />
 
-          <button onClick={() => askQuestion()}>
-            Send
-          </button>
-        </div>
-      </main>
+          <button type="submit">Send</button>
+        </form>
+      </div>
     </div>
   );
 }
