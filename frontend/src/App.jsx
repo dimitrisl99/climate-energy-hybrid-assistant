@@ -96,6 +96,7 @@ function App() {
       rewrittenQuery: null,
       visualData: [],
       chartType: "bar",
+      followUps: [],
     };
 
     const historyBeforeNewQuestion = messages;
@@ -156,6 +157,7 @@ function App() {
                 rewrittenQuery: event.rewritten_query,
                 visualData: event.visual_data || [],
                 chartType: event.chart_type || "bar",
+                followUps: event.follow_ups || [],
               };
 
               return updated;
@@ -444,6 +446,26 @@ function App() {
                     {msg.rewrittenQuery}
                   </div>
                 </details>
+              )}
+                {msg.followUps?.length > 0 && (
+                  <div className="followups-panel">
+                    <div className="followups-title">
+                      Suggested Questions
+                    </div>
+
+                    <div className="followups-grid">
+                      {msg.followUps.map((item, followIndex) => (
+                        <button
+                          key={followIndex}
+                          type="button"
+                          className="followup-btn"
+                          onClick={() => sendQuestion(item)}
+                        >
+                          {item}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
               )}
             </div>
           ))}
