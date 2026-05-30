@@ -213,6 +213,36 @@ function App() {
     setLoading(false);
   }
 
+  async function downloadReport(msg) {
+  const userQuestion = [...messages]
+    .slice(0, messages.indexOf(msg))
+    .reverse()
+    .find((item) => item.role === "user")?.content || "";
+
+  const response = await fetch("http://localhost:8000/export-report", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      question: userQuestion,
+      answer: msg.content,
+      route: msg.route || "",
+      sources: msg.sources || [],
+      visual_data: msg.visualData || [],
+    }),
+  });
+
+  const blob = await response.blob();
+  const url = window.URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "climate_report.pdf";
+  a.click();
+
+  window.URL.revokeObjectURL(url);
+}
   function handleSubmit(e) {
     e.preventDefault();
     sendQuestion(question);
@@ -309,6 +339,16 @@ function App() {
                   {msg.route}
                 </div>
               )}
+
+              {msg.role === "assistant" && msg.content && (
+                  <button
+                    type="button"
+                    className="download-report-btn"
+                    onClick={() => downloadReport(msg)}
+                  >
+                    Download Report PDF
+                  </button>
+                )}
 
               {msg.visualData?.length > 0 && (
                 <div className="analytics-panel">

@@ -690,3 +690,23 @@ body {
 .followup-btn:hover {
   background: rgba(37, 99, 235, 0.3);
 }
+
+
+.download-report-btn {
+  width: fit-content;
+  margin-top: 10px;
+  border: 1px solid rgba(147, 197, 253, 0.25);
+  background: rgba(37, 99, 235, 0.14);
+  color: #bfdbfe;
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.download-report-btn:hover {
+  background: rgba(37, 99, 235, 0.26);
+}
+
+

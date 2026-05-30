@@ -9,6 +9,12 @@ import json
 import time
 from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+from reportlab.lib.pagesizes import A4
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib import colors
+import uuid
 
 
 app = FastAPI(
@@ -52,6 +58,13 @@ class FeedbackRequest(BaseModel):
     route: str
     rating: str
     comment: str = ""
+
+class ReportRequest(BaseModel):
+    question: str
+    answer: str
+    route: str = ""
+    sources: list[dict] = []
+    visual_data: list[dict] = []
 
 
 @app.get("/")
@@ -108,6 +121,79 @@ def submit_feedback(request: FeedbackRequest):
         "message": "Feedback submitted successfully",
     }
 
+@app.post("/export-report")
+def export_report(request: ReportRequest):
+    reports_dir = Path("data/reports")
+    reports_dir.mkdir(parents=True, exist_ok=True)
+
+    filename = f"climate_report_{uuid.uuid4().hex[:8]}.pdf"
+    filepath = reports_dir / filename
+
+    doc = SimpleDocTemplate(
+        str(filepath),
+        pagesize=A4,
+        rightMargin=40,
+        leftMargin=40,
+        topMargin=40,
+        bottomMargin=40,
+    )
+
+    styles = getSampleStyleSheet()
+    story = []
+
+    story.append(Paragraph("Climate Energy Assistant Report", styles["Title"]))
+    story.append(Spacer(1, 12))
+
+    story.append(Paragraph(f"Generated: {datetime.now().isoformat(timespec='seconds')}", styles["Normal"]))
+    story.append(Spacer(1, 16))
+
+    story.append(Paragraph("Question", styles["Heading2"]))
+    story.append(Paragraph(request.question, styles["Normal"]))
+    story.append(Spacer(1, 12))
+
+    story.append(Paragraph("AI Analysis", styles["Heading2"]))
+    story.append(Paragraph(request.answer.replace("\n", "<br/>"), styles["Normal"]))
+    story.append(Spacer(1, 12))
+
+    if request.visual_data:
+        story.append(Paragraph("Visual Analytics", styles["Heading2"]))
+
+        table_data = [["Country/Year", "CO2", "CO2 per capita", "GHG"]]
+
+        for item in request.visual_data:
+            table_data.append([
+                str(item.get("country") or item.get("year") or "N/A"),
+                str(item.get("co2", "N/A")),
+                str(item.get("co2_per_capita", "N/A")),
+                str(item.get("ghg", "N/A")),
+            ])
+
+        table = Table(table_data, hAlign="LEFT")
+        table.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1d4ed8")),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+            ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("PADDING", (0, 0), (-1, -1), 6),
+        ]))
+
+        story.append(table)
+        story.append(Spacer(1, 12))
+
+    if request.sources:
+        story.append(Paragraph("Sources", styles["Heading2"]))
+
+        for index, source in enumerate(request.sources, start=1):
+            source_text = f"{index}. {source.get('title', 'Unknown source')} — Page {source.get('page', 'N/A')}"
+            story.append(Paragraph(source_text, styles["Normal"]))
+
+    doc.build(story)
+
+    return FileResponse(
+        path=str(filepath),
+        filename=filename,
+        media_type="application/pdf",
+    )
 
 @app.post("/ask")
 def ask_question(request: QuestionRequest):
@@ -168,6 +254,7 @@ def ask_question_stream(request: QuestionRequest):
             "sources": sources,
             "visual_data": result.get("visual_data", []),
             "chart_type": result.get("chart_type", "bar"),
+            "follow_ups": result.get("follow_ups", []),
         }
 
         yield json.dumps(metadata) + "\n"

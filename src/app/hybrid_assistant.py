@@ -69,6 +69,46 @@ def detect_chart_type(query: str):
 
     return "bar"
 
+def generate_follow_ups(query: str, route: str, chart_type: str = "bar"):
+    query_lower = query.lower()
+
+    if route == "structured":
+        if chart_type == "line":
+            return [
+                "Compare Greece emissions trend with Germany",
+                "Show Greece CO2 emissions over a longer period",
+                "Which year had the highest CO2 emissions for Greece?",
+            ]
+
+        return [
+            "Compare Greece with Italy",
+            "Show Greece CO2 emissions over time",
+            "Which country has the highest CO2 emissions?",
+        ]
+
+    if route == "hybrid":
+        if "compare" in query_lower:
+            return [
+                "Show these countries' CO2 emissions over time",
+                "Explain why Germany emits more CO2",
+                "Compare the same countries by CO2 per capita",
+            ]
+
+        return [
+            "Show the structured data behind this answer",
+            "Open the most relevant source document",
+            "Compare this with another country",
+        ]
+
+    if route == "rag":
+        return [
+            "Show the sources for this answer",
+            "Summarize the key findings",
+            "What are the policy implications?",
+        ]
+
+    return []
+
 def build_conversation_context(chat_history: list[dict], max_turns: int = 4) -> str:
     recent_messages = chat_history[-max_turns:]
     context_lines = []
@@ -144,6 +184,11 @@ def run_assistant(user_query: str, chat_history: list[dict] | None = None):
             "raw_result": structured_result,
             "visual_data": build_visual_data(structured_result),
             "chart_type": detect_chart_type(rewritten_query),
+            "follow_ups": generate_follow_ups(
+                rewritten_query,
+                "structured",
+                detect_chart_type(rewritten_query),
+            ),
         }
 
     if route == "rag":
@@ -154,6 +199,10 @@ def run_assistant(user_query: str, chat_history: list[dict] | None = None):
             "router_reason": classification["reason"],
             "rewritten_query": rewritten_query,
             "answer": rag_answer,
+            "follow_ups": generate_follow_ups(
+                rewritten_query,
+                "rag",
+            ),
         }
 
     if route == "hybrid":
@@ -180,6 +229,11 @@ def run_assistant(user_query: str, chat_history: list[dict] | None = None):
             "raw_result": structured_result,
             "visual_data": build_visual_data(structured_result),
             "chart_type": detect_chart_type(rewritten_query),
+            "follow_ups": generate_follow_ups(
+                rewritten_query,
+                "hybrid",
+                detect_chart_type(rewritten_query),
+            ),
         }
 
     rag_answer = answer_with_rag(rewritten_query)
@@ -189,6 +243,10 @@ def run_assistant(user_query: str, chat_history: list[dict] | None = None):
         "router_reason": "Fallback route.",
         "rewritten_query": rewritten_query,
         "answer": rag_answer,
+        "follow_ups": generate_follow_ups(
+            rewritten_query,
+            "rag",
+        ),
     }
 
 
