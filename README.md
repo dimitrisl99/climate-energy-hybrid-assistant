@@ -11,6 +11,10 @@ This project combines:
 - 🔀 Hybrid answer generation combining structured data + retrieved context
 - 🧠 Conversational memory with contextual query rewriting
 - 🎯 Hybrid retrieval with reranking and evaluation pipelines
+- 📈 Interactive analytics dashboards and visualizations
+- 💡 Suggested follow-up questions
+- 📄 Downloadable PDF report generation
+- 📎 Clickable PDF citations and source navigation
 - ⚡ Modern React frontend with enterprise-style UI
 - 🌊 Streaming AI responses
 - 🐳 Dockerized multi-container architecture
@@ -41,13 +45,54 @@ The assistant retrieves real structured data and generates grounded summaries us
 
 ---
 
+## 📈 Interactive Analytics Dashboard
+
+The assistant automatically generates visual analytics based on structured climate data.
+
+### Analytics Cards
+
+Displays key metrics including:
+
+- CO₂ Emissions
+- CO₂ Per Capita
+- Greenhouse Gas Emissions
+
+### Comparison Charts
+
+Automatically generated for comparison queries.
+
+Example:
+
+```text
+Compare Greece Germany France
+```
+
+### Trend Analysis Charts
+
+Automatically generated for historical and time-series queries.
+
+Example:
+
+```text
+Show Greece CO2 emissions over time
+```
+
+The assistant dynamically switches between:
+
+- 📊 Bar Charts
+- 📉 Line Charts
+
+depending on the query intent.
+
+---
+
 ## 🧠 Conversational Memory
 
 The assistant supports multi-turn conversations with contextual understanding.
 
 ### Example Conversation
 
-```bash
+```text
 User: Compare Greece Germany France
 User: What about Italy?
 ```
@@ -60,6 +105,26 @@ This enables:
 - memory-aware routing
 - context-aware structured querying
 - more natural assistant behavior
+
+---
+
+## 💡 Suggested Follow-Up Questions
+
+The assistant automatically generates contextual follow-up questions based on the current response.
+
+### Example
+
+```text
+Compare Greece with Italy
+Show emissions trend since 2000
+Which country emits the most CO2?
+```
+
+This improves:
+
+- conversational exploration
+- user engagement
+- analytical workflows
 
 ---
 
@@ -136,7 +201,7 @@ An LLM router dynamically classifies queries into:
 ### Examples
 
 | Query | Route |
-|---|---|
+|---------|---------|
 | `show me the top emitters` | structured |
 | `What are the climate risks in Europe?` | rag |
 | `Compare Greece and Germany emissions and explain what this means` | hybrid |
@@ -165,17 +230,20 @@ The assistant combines:
 
 ---
 
-## 📎 Citation-Aware Answers
+## 📎 Citation-Aware Answers & Source Navigation
 
 RAG and hybrid responses include inline citations and source attribution.
 
-### Example
+### Features
 
-```text
-The EU is on track to achieve its 2030 emissions target [1].
-```
+- Inline citations
+- Expandable source cards
+- Source metadata
+- PDF page references
+- Direct PDF opening
+- Clickable PDF citations
 
-The frontend includes expandable source cards and metadata visualization.
+Users can open the original source document directly from the interface.
 
 ---
 
@@ -193,6 +261,34 @@ Instead of waiting for the full response, answers appear progressively while the
 - Token-style UI updates
 
 This creates a significantly more interactive and production-style user experience.
+
+---
+
+## 📄 PDF Report Generation
+
+The assistant can generate downloadable PDF reports for analytics and research workflows.
+
+Generated reports include:
+
+- User Question
+- AI Analysis
+- Analytics Tables
+- Source References
+- Generation Timestamp
+
+### Example Workflow
+
+```text
+User Question
+      ↓
+AI Analysis
+      ↓
+Visual Analytics
+      ↓
+Export PDF Report
+```
+
+This enables enterprise-style reporting and knowledge sharing.
 
 ---
 
@@ -220,6 +316,8 @@ The project includes a redesigned enterprise-style React frontend built with:
 
 - React
 - Vite
+- Recharts
+- React Markdown
 - Modern CSS
 - Responsive dashboard layout
 - Chat-style assistant experience
@@ -229,6 +327,12 @@ The project includes a redesigned enterprise-style React frontend built with:
 - 💬 Chat-based interface
 - 🧠 Conversational memory visualization
 - 📚 Expandable source cards
+- 📎 Clickable PDF citations
+- 📊 Interactive analytics dashboard
+- 📈 Bar chart visualizations
+- 📉 Line chart visualizations
+- 💡 Suggested follow-up questions
+- 📄 PDF report export
 - ⚡ Streaming responses
 - 🎯 Example prompt shortcuts
 - 🧭 Query routing badges
@@ -277,12 +381,15 @@ docker compose up --build
 - Cross-Encoder Rerankers
 - Ollama
 - Qwen2.5
+- ReportLab
 
 ## Frontend
 
 - React
 - Vite
 - JavaScript
+- Recharts
+- React Markdown
 - Modern CSS
 
 ## DevOps
@@ -316,7 +423,8 @@ climate-energy-assistant/
 │   ├── raw/
 │   │   ├── csv/
 │   │   └── pdfs/
-│   └── db/
+│   ├── feedback/
+│   └── reports/
 │
 ├── notebooks/
 ├── screenshots/
@@ -364,24 +472,24 @@ This supports enterprise-style RAG validation workflows.
 Compare Germany France Greece
 ```
 
----
+## Trend Analysis
+
+```text
+Show Greece CO2 emissions over time
+```
 
 ## Conversational Structured Querying
 
-```bash
+```text
 User: Compare Greece Germany France
 User: What about Italy?
 ```
-
----
 
 ## RAG over Climate Reports
 
 ```text
 What are the main climate risks in Europe?
 ```
-
----
 
 ## Hybrid Reasoning
 
@@ -399,8 +507,6 @@ Compare Greece and Germany emissions and explain what this means
 git clone https://github.com/dimitrisl99/climate-energy-hybrid-assistant.git
 cd climate-energy-hybrid-assistant
 ```
-
----
 
 ## Run with Docker
 
@@ -428,6 +534,46 @@ http://localhost:8000/docs
 
 ---
 
+# 🔌 API Endpoints
+
+## Health Check
+
+```http
+GET /health
+```
+
+## Standard Question
+
+```http
+POST /ask
+```
+
+## Streaming Question
+
+```http
+POST /ask/stream
+```
+
+## Feedback Collection
+
+```http
+POST /feedback
+```
+
+## Export Report
+
+```http
+POST /export-report
+```
+
+## PDF Access
+
+```http
+GET /files/{filename}
+```
+
+---
+
 # 📸 Screenshots
 
 ![Frontend REACT.png](screenshots/Frontend%20REACT.png)
@@ -438,10 +584,10 @@ http://localhost:8000/docs
 
 # 🔮 Future Improvements
 
-- Clickable PDF citations
-- Advanced semantic chunking
+- Multi-country trend charts
+- Embedded chart export inside PDF reports
+- Advanced KPI dashboards
 - Tool calling / agents
-- Text-to-SQL experimentation
 - Multi-document conversational RAG memory
 - Authentication system
 - Persistent chat history
@@ -462,6 +608,8 @@ This project was designed to demonstrate:
 - conversational AI engineering
 - local LLM deployment
 - modern frontend/backend integration
+- interactive analytics dashboards
+- PDF report generation
 - Dockerized AI application deployment
 
 ---
@@ -469,4 +617,3 @@ This project was designed to demonstrate:
 # 👨‍💻 Author
 
 Dimitris Loukakis
-
