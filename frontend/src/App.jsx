@@ -82,7 +82,7 @@ function App() {
   }, [messages, loading]);
 
   async function sendQuestion(text) {
-    if (!text.trim()) return;
+    if (!text.trim() || loading) return;
 
     const userMessage = {
       role: "user",
@@ -297,6 +297,7 @@ function App() {
             <button
               key={index}
               className="example-btn"
+              disabled={loading}
               onClick={() => sendQuestion(example)}
             >
               {example}
@@ -358,6 +359,7 @@ function App() {
                 <button
                   type="button"
                   className="download-report-btn"
+                  disabled={loading}
                   onClick={() => downloadReport(msg)}
                 >
                   Download Report PDF
@@ -514,6 +516,7 @@ function App() {
                         key={followIndex}
                         type="button"
                         className="followup-btn"
+                        disabled={loading}
                         onClick={() => sendQuestion(item)}
                       >
                         {item}
@@ -542,14 +545,24 @@ function App() {
           className="input-form"
           onSubmit={handleSubmit}
         >
-          <input
-            type="text"
-            placeholder="Ask something..."
-            value={question}
-            onChange={(e) => setQuestion(e.target.value)}
-          />
+            <input
+              type="text"
+              placeholder={
+                loading
+                  ? "Processing your request..."
+                  : "Ask about climate, emissions, energy or policies..."
+              }
+              value={question}
+              disabled={loading}
+              onChange={(e) => setQuestion(e.target.value)}
+            />
 
-          <button type="submit">Send</button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                >
+                  {loading ? "Working..." : "Send"}
+                </button>
         </form>
       </div>
     </div>
