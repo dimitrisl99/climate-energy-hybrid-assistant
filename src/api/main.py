@@ -233,10 +233,20 @@ def ask_question_stream(request: QuestionRequest):
             for message in request.chat_history
         ]
 
+        yield json.dumps({
+            "type": "status",
+            "message": "Routing query..."
+        }) + "\n"
+
         result = run_assistant(
             request.question,
             chat_history=chat_history,
         )
+
+        yield json.dumps({
+            "type": "status",
+            "message": "Preparing response..."
+        }) + "\n"
 
         answer = result.get("answer", "")
         sources = result.get("sources")
@@ -258,6 +268,11 @@ def ask_question_stream(request: QuestionRequest):
         }
 
         yield json.dumps(metadata) + "\n"
+
+        yield json.dumps({
+            "type": "status",
+            "message": "Generating answer..."
+        }) + "\n"
 
         words = answer.split(" ")
 

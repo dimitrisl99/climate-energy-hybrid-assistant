@@ -71,6 +71,7 @@ function App() {
   const [question, setQuestion] = useState("");
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [loadingStatus, setLoadingStatus] = useState("");
 
   const messagesEndRef = useRef(null);
 
@@ -109,6 +110,7 @@ function App() {
 
     setQuestion("");
     setLoading(true);
+    setLoadingStatus("Routing query...");
 
     try {
       const response = await fetch(API_URL, {
@@ -144,6 +146,10 @@ function App() {
           if (!line.trim()) continue;
 
           const event = JSON.parse(line);
+
+          if (event.type === "status") {
+            setLoadingStatus(event.message);
+          }
 
           if (event.type === "metadata") {
             setMessages((prev) => {
@@ -182,6 +188,7 @@ function App() {
 
           if (event.type === "done") {
             setLoading(false);
+            setLoadingStatus("");
           }
         }
       }
@@ -198,51 +205,58 @@ function App() {
           sources: [],
           visualData: [],
           chartType: "bar",
+          followUps: [],
         };
 
         return updated;
       });
+
+      setLoadingStatus("");
     }
 
     setLoading(false);
+    setLoadingStatus("");
   }
 
   function startNewChat() {
     setMessages([]);
     setQuestion("");
     setLoading(false);
+    setLoadingStatus("");
   }
 
   async function downloadReport(msg) {
-  const userQuestion = [...messages]
-    .slice(0, messages.indexOf(msg))
-    .reverse()
-    .find((item) => item.role === "user")?.content || "";
+    const userQuestion =
+      [...messages]
+        .slice(0, messages.indexOf(msg))
+        .reverse()
+        .find((item) => item.role === "user")?.content || "";
 
-  const response = await fetch("http://localhost:8000/export-report", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      question: userQuestion,
-      answer: msg.content,
-      route: msg.route || "",
-      sources: msg.sources || [],
-      visual_data: msg.visualData || [],
-    }),
-  });
+    const response = await fetch("http://localhost:8000/export-report", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        question: userQuestion,
+        answer: msg.content,
+        route: msg.route || "",
+        sources: msg.sources || [],
+        visual_data: msg.visualData || [],
+      }),
+    });
 
-  const blob = await response.blob();
-  const url = window.URL.createObjectURL(blob);
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
 
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "climate_report.pdf";
-  a.click();
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "climate_report.pdf";
+    a.click();
 
-  window.URL.revokeObjectURL(url);
-}
+    window.URL.revokeObjectURL(url);
+  }
+
   function handleSubmit(e) {
     e.preventDefault();
     sendQuestion(question);
@@ -341,14 +355,14 @@ function App() {
               )}
 
               {msg.role === "assistant" && msg.content && (
-                  <button
-                    type="button"
-                    className="download-report-btn"
-                    onClick={() => downloadReport(msg)}
-                  >
-                    Download Report PDF
-                  </button>
-                )}
+                <button
+                  type="button"
+                  className="download-report-btn"
+                  onClick={() => downloadReport(msg)}
+                >
+                  Download Report PDF
+                </button>
+              )}
 
               {msg.visualData?.length > 0 && (
                 <div className="analytics-panel">
@@ -487,25 +501,26 @@ function App() {
                   </div>
                 </details>
               )}
-                {msg.followUps?.length > 0 && (
-                  <div className="followups-panel">
-                    <div className="followups-title">
-                      Suggested Questions
-                    </div>
 
-                    <div className="followups-grid">
-                      {msg.followUps.map((item, followIndex) => (
-                        <button
-                          key={followIndex}
-                          type="button"
-                          className="followup-btn"
-                          onClick={() => sendQuestion(item)}
-                        >
-                          {item}
-                        </button>
-                      ))}
-                    </div>
+              {msg.followUps?.length > 0 && (
+                <div className="followups-panel">
+                  <div className="followups-title">
+                    Suggested Questions
                   </div>
+
+                  <div className="followups-grid">
+                    {msg.followUps.map((item, followIndex) => (
+                      <button
+                        key={followIndex}
+                        type="button"
+                        className="followup-btn"
+                        onClick={() => sendQuestion(item)}
+                      >
+                        {item}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
           ))}
@@ -515,7 +530,7 @@ function App() {
               <div className="loader-dot"></div>
 
               <span>
-                Routing query, retrieving context, and generating answer...
+                {loadingStatus || "Processing request..."}
               </span>
             </div>
           )}
