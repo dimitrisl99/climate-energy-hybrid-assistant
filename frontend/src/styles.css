@@ -709,4 +709,45 @@ body {
   background: rgba(37, 99, 235, 0.26);
 }
 
+.feedback-panel {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 0.78rem;
+  color: #94a3b8;
+}
 
+.feedback-btn {
+  border: 1px solid rgba(147, 197, 253, 0.22);
+  background: rgba(15, 23, 42, 0.95);
+  color: #dbeafe;
+  border-radius: 999px;
+  padding: 7px 10px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: 0.18s ease;
+}
+
+.feedback-btn:hover:not(:disabled) {
+  background: rgba(37, 99, 235, 0.2);
+  border-color: rgba(147, 197, 253, 0.45);
+}
+
+.feedback-btn.active {
+  background: rgba(22, 163, 74, 0.2);
+  border-color: rgba(134, 239, 172, 0.45);
+  color: #bbf7d0;
+}
+
+.feedback-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.feedback-saved {
+  color: #86efac;
+  font-weight: 800;
+}

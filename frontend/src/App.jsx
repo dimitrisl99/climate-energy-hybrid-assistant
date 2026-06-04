@@ -98,6 +98,7 @@ function App() {
       visualData: [],
       chartType: "bar",
       followUps: [],
+      feedback: null,
     };
 
     const historyBeforeNewQuestion = messages;
@@ -206,6 +207,7 @@ function App() {
           visualData: [],
           chartType: "bar",
           followUps: [],
+          feedback: null,
         };
 
         return updated;
@@ -256,6 +258,44 @@ function App() {
 
     window.URL.revokeObjectURL(url);
   }
+
+
+  async function submitFeedback(msg, rating) {
+  const userQuestion =
+    [...messages]
+      .slice(0, messages.indexOf(msg))
+      .reverse()
+      .find((item) => item.role === "user")?.content || "";
+
+  try {
+    await fetch("http://localhost:8000/feedback", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        question: userQuestion,
+        answer: msg.content,
+        route: msg.route || "",
+        rating,
+        comment: "",
+      }),
+    });
+
+    setMessages((prev) =>
+      prev.map((item) =>
+        item === msg
+          ? {
+              ...item,
+              feedback: rating,
+            }
+          : item
+      )
+    );
+  } catch (error) {
+    console.error("Feedback error:", error);
+  }
+}
 
   function handleSubmit(e) {
     e.preventDefault();
@@ -365,6 +405,45 @@ function App() {
                   Download Report PDF
                 </button>
               )}
+
+              {msg.role === "assistant" && msg.content && (
+                  <div className="feedback-panel">
+                    <span>Was this helpful?</span>
+
+                    <button
+                      type="button"
+                      className={
+                        msg.feedback === "positive"
+                          ? "feedback-btn active"
+                          : "feedback-btn"
+                      }
+                      disabled={loading || Boolean(msg.feedback)}
+                      onClick={() => submitFeedback(msg, "positive")}
+                    >
+                      👍 Helpful
+                    </button>
+
+                    <button
+                      type="button"
+                      className={
+                        msg.feedback === "negative"
+                          ? "feedback-btn active"
+                          : "feedback-btn"
+                      }
+                      disabled={loading || Boolean(msg.feedback)}
+                      onClick={() => submitFeedback(msg, "negative")}
+                    >
+                      👎 Not Helpful
+                    </button>
+
+                    {msg.feedback && (
+                      <span className="feedback-saved">
+                        Feedback saved
+                      </span>
+                    )}
+                  </div>
+                )}
+
 
               {msg.visualData?.length > 0 && (
                 <div className="analytics-panel">
