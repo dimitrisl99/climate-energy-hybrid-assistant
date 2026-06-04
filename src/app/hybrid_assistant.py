@@ -35,6 +35,62 @@ def build_visual_data(structured_result):
     elif hasattr(structured_result, "to_dict"):
         rows = structured_result.to_dict(orient="records")
 
+    if rows:
+        first_row = rows[0]
+
+        if (
+                isinstance(first_row, dict)
+                and "country" in first_row
+                and "year" in first_row
+                and "co2" in first_row
+        ):
+            countries = list(
+                sorted(
+                    {
+                        row["country"]
+                        for row in rows
+                        if row.get("country")
+                    }
+                )
+            )
+
+            years = list(
+                sorted(
+                    {
+                        row["year"]
+                        for row in rows
+                        if row.get("year")
+                    }
+                )
+            )
+
+            if len(countries) > 1:
+                chart_rows = []
+
+                for year in years:
+                    year_row = {"year": year}
+
+                    for country in countries:
+                        match = next(
+                            (
+                                row
+                                for row in rows
+                                if row.get("year") == year
+                                   and row.get("country") == country
+                            ),
+                            None,
+                        )
+
+                        year_row[country] = (
+                            match.get("co2")
+                            if match
+                            else None
+                        )
+
+                    chart_rows.append(year_row)
+
+                return chart_rows
+
     visual_data = []
 
     for row in rows[:6]:
@@ -53,6 +109,12 @@ def build_visual_data(structured_result):
 
 def detect_chart_type(query: str):
     query = query.lower()
+
+    if (
+        "compare" in query
+        and "over time" in query
+    ):
+        return "multi_line"
 
     trend_keywords = [
         "trend",

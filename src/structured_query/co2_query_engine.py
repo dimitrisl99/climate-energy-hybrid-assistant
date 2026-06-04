@@ -67,6 +67,18 @@ def compare_countries(countries: list[str], year: int) -> pd.DataFrame:
 
     return result.sort_values("co2", ascending=False)
 
+def compare_countries_over_time(countries: list[str]) -> pd.DataFrame:
+    df = load_co2_data()
+
+    countries_lower = [c.lower() for c in countries]
+
+    result = df[
+        (df["country"].str.lower().isin(countries_lower))
+        & (df["co2"].notna())
+    ][["country", "year", "co2"]]
+
+    return result.sort_values(["country", "year"])
+
 
 if __name__ == "__main__":
     latest_year = latest_year_with_co2()

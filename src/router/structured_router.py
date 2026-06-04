@@ -3,6 +3,7 @@ from src.structured_query.co2_query_engine import (
     top_emitters,
     country_emissions,
     compare_countries,
+    compare_countries_over_time,
     get_available_countries,
 )
 
@@ -30,6 +31,15 @@ def route_structured_query(user_query: str):
             or ("highest emissions" in query)
     ):
         return top_emitters(latest_year, 10)
+
+    if (
+            "compare" in query
+            and "over time" in query
+    ):
+        countries = extract_countries_from_query(user_query)
+
+        if countries:
+            return compare_countries_over_time(countries)
 
     if "compare" in query:
         countries = extract_countries_from_query(user_query)

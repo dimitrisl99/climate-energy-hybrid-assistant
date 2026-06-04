@@ -12,6 +12,7 @@ import {
   Tooltip,
   ResponsiveContainer,
   CartesianGrid,
+  Legend,
 } from "recharts";
 
 const API_URL = "http://localhost:8000/ask/stream";
@@ -483,9 +484,11 @@ function App() {
 
                   <div className="chart-section">
                     <div className="chart-title">
-                      {msg.chartType === "line"
-                        ? "CO₂ emissions trend"
-                        : "CO₂ emissions comparison"}
+                      {msg.chartType === "multi_line"
+                        ? "Multi-country CO₂ trend"
+                        : msg.chartType === "line"
+                          ? "CO₂ emissions trend"
+                          : "CO₂ emissions comparison"}
                     </div>
 
                     <div className="chart-box">
@@ -493,7 +496,36 @@ function App() {
                         width="100%"
                         height={260}
                       >
-                        {msg.chartType === "line" ? (
+                        {msg.chartType === "multi_line" ? (
+                          <LineChart data={msg.visualData}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="year" />
+                            <YAxis />
+                            <Tooltip />
+                            <Legend />
+
+                            {Object.keys(msg.visualData?.[0] || {})
+                              .filter((key) => key !== "year")
+                              .map((country, index) => (
+                                <Line
+                                  key={country}
+                                  type="monotone"
+                                  dataKey={country}
+                                  name={country}
+                                  stroke={[
+                                    "#2563eb",
+                                    "#16a34a",
+                                    "#dc2626",
+                                    "#ea580c",
+                                    "#7c3aed",
+                                    "#0891b2",
+                                  ][index % 6]}
+                                  strokeWidth={3}
+                                  dot={false}
+                                />
+                              ))}
+                          </LineChart>
+                        ) : msg.chartType === "line" ? (
                           <LineChart data={msg.visualData}>
                             <CartesianGrid strokeDasharray="3 3" />
                             <XAxis dataKey="year" />
