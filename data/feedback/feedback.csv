@@ -1,3 +1,9 @@
 timestamp,question,answer,route,rating,comment
 2026-05-19T14:51:49,What are the main climate risks in Europe?,Test answer,rag,useful,Good answer
 2026-05-19T14:51:52,What are the main climate risks in Europe?,Test answer,rag,useful,Good answer
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,2026-06-04T11:46:18,What are the EU climate neutrality targets?,"The European Union has committed to achieving climate neutrality by 2050 or sooner [2] [4]. When aggregated, the national targets set by Member States are 6 percentage points short of the net-zero greenhouse gas emissions target for 2050 [2]. This commitment is part of a broader strategy aimed at reducing emissions and addressing the challenges posed by international aviation and maritime sectors [2]. ",rag,positive,
