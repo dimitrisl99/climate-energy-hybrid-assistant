@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import "./styles.css";
+import { toPng } from "html-to-image";
+
 
 import {
   BarChart,
@@ -76,6 +78,7 @@ function App() {
   const [queryHistory, setQueryHistory] = useState([]);
 
   const messagesEndRef = useRef(null);
+  const chartRefs = useRef({});
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({
@@ -239,37 +242,49 @@ function App() {
     setLoadingStatus("");
   }
 
-  async function downloadReport(msg) {
-    const userQuestion =
-      [...messages]
-        .slice(0, messages.indexOf(msg))
-        .reverse()
-        .find((item) => item.role === "user")?.content || "";
+  async function downloadReport(msg, index) {
+      const userQuestion =
+        [...messages]
+          .slice(0, messages.indexOf(msg))
+          .reverse()
+          .find((item) => item.role === "user")?.content || "";
 
-    const response = await fetch("http://localhost:8000/export-report", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        question: userQuestion,
-        answer: msg.content,
-        route: msg.route || "",
-        sources: msg.sources || [],
-        visual_data: msg.visualData || [],
-      }),
-    });
+      let chartImage = null;
 
-    const blob = await response.blob();
-    const url = window.URL.createObjectURL(blob);
+      const chartNode = chartRefs.current[index];
 
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "climate_report.pdf";
-    a.click();
+      if (chartNode) {
+        chartImage = await toPng(chartNode, {
+          backgroundColor: "#0f172a",
+          pixelRatio: 2,
+        });
+      }
 
-    window.URL.revokeObjectURL(url);
-  }
+      const response = await fetch("http://localhost:8000/export-report", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          question: userQuestion,
+          answer: msg.content,
+          route: msg.route || "",
+          sources: msg.sources || [],
+          visual_data: msg.visualData || [],
+          chart_image: chartImage,
+        }),
+      });
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "climate_report.pdf";
+      a.click();
+
+      window.URL.revokeObjectURL(url);
+    }
 
 
   async function submitFeedback(msg, rating) {
@@ -432,7 +447,7 @@ function App() {
                   type="button"
                   className="download-report-btn"
                   disabled={loading}
-                  onClick={() => downloadReport(msg)}
+                  onClick={() => downloadReport(msg, index)}
                 >
                   Download Report PDF
                 </button>
@@ -522,7 +537,12 @@ function App() {
                           : "CO₂ emissions comparison"}
                     </div>
 
-                    <div className="chart-box">
+                    <div
+                      className="chart-box"
+                      ref={(node) => {
+                        chartRefs.current[index] = node;
+                      }}
+                    >
                       <ResponsiveContainer
                         width="100%"
                         height={260}
