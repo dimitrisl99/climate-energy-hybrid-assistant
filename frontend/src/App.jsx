@@ -73,6 +73,7 @@ function App() {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [loadingStatus, setLoadingStatus] = useState("");
+  const [queryHistory, setQueryHistory] = useState([]);
 
   const messagesEndRef = useRef(null);
 
@@ -85,9 +86,19 @@ function App() {
   async function sendQuestion(text) {
     if (!text.trim() || loading) return;
 
+    const cleanQuestion = text.trim();
+
+    setQueryHistory((prev) => {
+      const withoutDuplicate = prev.filter(
+        (item) => item.toLowerCase() !== cleanQuestion.toLowerCase()
+      );
+
+      return [cleanQuestion, ...withoutDuplicate].slice(0, 5);
+    });
+
     const userMessage = {
       role: "user",
-      content: text,
+      content: cleanQuestion,
     };
 
     const assistantMessage = {
@@ -121,7 +132,7 @@ function App() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          question: text,
+          question: cleanQuestion,
           chat_history: historyBeforeNewQuestion,
         }),
       });
@@ -322,6 +333,26 @@ function App() {
           <strong>Memory</strong>
           <span>{messages.length} messages</span>
         </div>
+
+        {queryHistory.length > 0 && (
+          <div className="history-box">
+            <strong>Recent Queries</strong>
+
+            <div className="history-list">
+              {queryHistory.map((item, index) => (
+                <button
+                  key={index}
+                  type="button"
+                  className="history-btn"
+                  disabled={loading}
+                  onClick={() => sendQuestion(item)}
+                >
+                  {item}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <button
           type="button"
