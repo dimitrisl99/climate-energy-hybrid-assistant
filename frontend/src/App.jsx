@@ -77,21 +77,35 @@ function App() {
   const [loadingStatus, setLoadingStatus] = useState("");
   const [queryHistory, setQueryHistory] = useState([]);
 
-  useEffect(() => {
-  const savedMessages =
-    localStorage.getItem("chat_messages");
+    useEffect(() => {
+      const savedMessages =
+        localStorage.getItem("chat_messages");
 
-  const savedQueries =
-    localStorage.getItem("query_history");
+      const savedQueries =
+        localStorage.getItem("query_history");
 
-  if (savedMessages) {
-    setMessages(JSON.parse(savedMessages));
-  }
+      if (savedMessages) {
+        setMessages(JSON.parse(savedMessages));
+      }
 
-  if (savedQueries) {
-    setQueryHistory(JSON.parse(savedQueries));
-  }
-}, []);
+      if (savedQueries) {
+        setQueryHistory(JSON.parse(savedQueries));
+      }
+    }, []);
+
+    useEffect(() => {
+      localStorage.setItem(
+        "chat_messages",
+        JSON.stringify(messages)
+      );
+    }, [messages]);
+
+    useEffect(() => {
+      localStorage.setItem(
+        "query_history",
+        JSON.stringify(queryHistory)
+      );
+    }, [queryHistory]);
 
 
   const messagesEndRef = useRef(null);

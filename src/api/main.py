@@ -15,6 +15,9 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib import colors
 import uuid
+import base64
+from io import BytesIO
+from reportlab.platypus import Image
 
 
 app = FastAPI(
@@ -65,6 +68,7 @@ class ReportRequest(BaseModel):
     route: str = ""
     sources: list[dict] = []
     visual_data: list[dict] = []
+    chart_image: str | None = None
 
 
 @app.get("/")
@@ -178,6 +182,20 @@ def export_report(request: ReportRequest):
         ]))
 
         story.append(table)
+        story.append(Spacer(1, 12))
+
+    if request.chart_image:
+        story.append(Paragraph("Chart", styles["Heading2"]))
+
+        image_data = request.chart_image.split(",", 1)[1]
+        image_bytes = base64.b64decode(image_data)
+        image_buffer = BytesIO(image_bytes)
+
+        chart = Image(image_buffer)
+        chart.drawWidth = 480
+        chart.drawHeight = 260
+
+        story.append(chart)
         story.append(Spacer(1, 12))
 
     if request.sources:
