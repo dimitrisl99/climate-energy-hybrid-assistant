@@ -77,6 +77,23 @@ function App() {
   const [loadingStatus, setLoadingStatus] = useState("");
   const [queryHistory, setQueryHistory] = useState([]);
 
+  useEffect(() => {
+  const savedMessages =
+    localStorage.getItem("chat_messages");
+
+  const savedQueries =
+    localStorage.getItem("query_history");
+
+  if (savedMessages) {
+    setMessages(JSON.parse(savedMessages));
+  }
+
+  if (savedQueries) {
+    setQueryHistory(JSON.parse(savedQueries));
+  }
+}, []);
+
+
   const messagesEndRef = useRef(null);
   const chartRefs = useRef({});
 
@@ -235,12 +252,14 @@ function App() {
     setLoadingStatus("");
   }
 
-  function startNewChat() {
-    setMessages([]);
-    setQuestion("");
-    setLoading(false);
-    setLoadingStatus("");
-  }
+    function startNewChat() {
+      setMessages([]);
+      setQuestion("");
+      setLoading(false);
+      setLoadingStatus("");
+
+      localStorage.removeItem("chat_messages");
+    }
 
   async function downloadReport(msg, index) {
       const userQuestion =
